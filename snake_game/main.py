@@ -2,6 +2,44 @@ import pygame
 from pygame.locals import *
 import time
 import random
+import logging
+
+
+
+
+logger = logging.getLogger('snake_logger')
+logger.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('snake.log')
+file_handler.setLevel(logging.INFO)
+
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+
+file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+file_handler.setFormatter(file_formatter)
+
+console_formatter = logging.Formatter('%(levelname)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+
+critical_logger = logging.getLogger('critical_logger')
+critical_logger.setLevel(logging.ERROR)  
+
+critical_file_handler = logging.FileHandler('critical.log')
+critical_file_handler.setLevel(logging.CRITICAL)
+
+critical_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+critical_file_handler.setFormatter(critical_formatter)
+
+critical_logger.addHandler(critical_file_handler)
+
+
 
 SIZE=40
 STEP_SIZE = 40
@@ -89,6 +127,8 @@ class Snake:
 class Game:  
     def __init__(self):
         pygame.init()
+        logger.info(" NEW Game")
+        critical_logger.critical("NEW GAME")
         self.surface = pygame.display.set_mode((600,600))
         #self.surface.fill((110,110,5))
         self.snake = Snake(self.surface,5)
@@ -120,12 +160,15 @@ class Game:
 
         ## eating apple
         if self.is_collision(self.snake.x[0],self.snake.y[0], self.apple.x, self.apple.y):
+            logger.info('EAT_APPLE')
             self.snake.increase_length()
             self.apple.move()
 
         # eate snake xd
         for i in range(1, self.snake.length):
             if self.is_collision(self.snake.x[0],self.snake.y[0],self.snake.x[i],self.snake.y[i]):
+                critical_logger.critical('EAT_SNAKE')
+                logger.info('EAT SNAKE')
                 raise("game over xd")
         
         if (
@@ -134,6 +177,8 @@ class Game:
         self.snake.y[0] < 0 or 
         self.snake.y[0] >= 600
     ):
+            logger.info('Sciana')
+            critical_logger.critical('SCIANA')
             raise Exception("game over xd")
                 
 
@@ -142,6 +187,7 @@ class Game:
         self.surface.fill(BACKGROUND_COLOR)
         font = pygame.font.SysFont('arial', 30)
         line1 = font.render(f"Game is over! Your score is {self.snake.length}", True, (255, 255, 255))
+        logger.info(f"Game is over! Your score is {self.snake.length}")
         self.surface.blit(line1, (200, 300))
         line2 = font.render("To play again press Enter. To exit press Escape!", True, (255, 255, 255))
         self.surface.blit(line2, (200, 350))
@@ -149,6 +195,8 @@ class Game:
 
 
     def reset(self):
+        logger.info('RESTART. NEW GAME')
+        critical_logger.critical("RESTART")
         self.snake = Snake(self.surface,4)
         self.apple = Apple(self.surface)
         
@@ -173,15 +221,19 @@ class Game:
                     
                         if event.key == K_UP:
                             self.snake.move_up()
+                            logger.info('UP')   
 
                         if event.key == K_DOWN:
                             self.snake.move_down()
+                            logger.info('DOWN')   
 
                         if event.key == K_RIGHT:
                             self.snake.move_right()
+                            logger.info('RIGHT')   
 
                         if event.key == K_LEFT:
                             self.snake.move_left()
+                            logger.info('LEFT')   
     
                 elif event.type == QUIT:
                     running = False
@@ -190,6 +242,8 @@ class Game:
                     self.play()
             except Exception as e:
                 self.game_over()
+                logger.info('GAME_OVER')
+                critical_logger.critical('GAME_OVER')
                 pause =True    
                 
             time.sleep(.4)
