@@ -28,12 +28,14 @@ contract Auth {
 
     event UserRegistered(address indexed userAddress, string name, bool isUserLoggedIn);
     event UserPasswordChanged(address indexed userAddress, string newPassword);
+    event UserNameChanged(address indexed userAddress, string newName);
     event UserLoggedIn(address indexed userAddress);
     event UserLoggedOut(address indexed userAddress);
 
     constructor() {
         adminAddress = msg.sender;
-        superuserAddress = address(0); // Суперпользователь пока не установлен
+        superuserAddress = address(0); 
+        registerUser(msg.sender, "admin", "admin");
     }
 
     modifier onlyAdmin() {
@@ -63,7 +65,7 @@ contract Auth {
 
 
 
-    function checkUserStatus(address _userAddress) public view returns (string memory) {
+    function checkUserStatus(address _userAddress) public view onlyAdmin returns (string memory) {
     UserDetail memory user = users[_userAddress];
     require(bytes(user.name).length > 0, "User is not registered");
     if (_userAddress == adminAddress) {
@@ -88,6 +90,7 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
 
    modifier onlyUser() {
     require(bytes(users[msg.sender].name).length > 0, "Only registered users can call this function");
+    require(users[msg.sender].isUserLoggedIn, "User must be logged in");
     _;
 }
 
@@ -115,30 +118,46 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
     return true;
 }
 
-    function changeUserPassword(address _userAddress, string memory _newPassword) public onlyUser {
+    function changeUserPassword(address _userAddress, string memory _newPassword) public onlyAdmin {
         require(_userAddress == msg.sender, "Only the user can change their password");
         users[_userAddress].password = _newPassword;
         emit UserPasswordChanged(_userAddress, _newPassword);
     }
 
+    function changeUserName(address _userAddress, string memory _newName) public onlyAdmin {
+        
+        users[_userAddress].name = _newName;
+        emit UserNameChanged(_userAddress, _newName);
+    }
+
+
+
+    function changeMyPassword(string memory _newPassword) public onlyUser {
+    // Использует msg.sender для идентификации пользователя, который вызывает функцию
+    users[msg.sender].password = _newPassword;
+    emit UserPasswordChanged(msg.sender, _newPassword);
+}
+
+
     function registerUserPublic(string memory _name, string memory _password) public returns (bool) {
         return registerUser(msg.sender, _name, _password);
     }
 
-    function loginUser(address _userAddress, string memory _password) public returns (bool) {
-        require(bytes(users[_userAddress].name).length > 0, "User is not registered");
-        require(keccak256(bytes(users[_userAddress].password)) == keccak256(bytes(_password)), "Invalid password");
-        users[_userAddress].isUserLoggedIn = true;
-        emit UserLoggedIn(_userAddress);
-        return true;
-    }
+   function loginUser(string memory _name, string memory _password) public returns (bool) {
+    require(bytes(users[msg.sender].name).length > 0, "User is not registered");
+    require(keccak256(abi.encodePacked(users[msg.sender].name)) == keccak256(abi.encodePacked(_name)), "Invalid name");
+    require(keccak256(bytes(users[msg.sender].password)) == keccak256(bytes(_password)), "Invalid password");
+    users[msg.sender].isUserLoggedIn = true;
+    emit UserLoggedIn(msg.sender);
+    return true;
+}
 
     function logoutUser() public onlyUser {
         users[msg.sender].isUserLoggedIn = false;
         emit UserLoggedOut(msg.sender);
     }
 
-    function addLog(string memory _logData) public  {
+    function addLog(string memory _logData) public onlyUser {
         logs[msg.sender].push(LogEntry({
             logData: _logData
         }));
@@ -151,6 +170,10 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
     function getAllUsers() public view onlyAdmin returns (address[] memory) {
         return userList;
     }
+
+    function viewMyLogs() public view onlyUser returns (LogEntry[] memory) {
+    return getLogs(msg.sender);
+}
 
     function viewUserStatus() public view onlyUser returns (string memory) {
         if (msg.sender == adminAddress) {
