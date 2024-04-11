@@ -48,9 +48,9 @@ contract Auth {
         _;
     }
 
-    function getUserDetails(address _userAddress) public view onlyAdmin returns (string memory name, bool isLoggedIn, string memory role) {
+    function getUserDetails(address _userAddress) public view onlyAdmin returns (string memory name,string memory password, bool isLoggedIn, string memory role) {
         UserDetail memory user = users[_userAddress];
-        return (user.name, user.isUserLoggedIn, userRoleToString(user.role));
+        return (user.name,user.password, user.isUserLoggedIn, userRoleToString(user.role));
     }
 
     function userRoleToString(UserRole role) private pure returns (string memory) {
@@ -139,9 +139,7 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
 }
 
 
-    function registerUserPublic(string memory _name, string memory _password) public returns (bool) {
-        return registerUser(msg.sender, _name, _password);
-    }
+   
 
    function loginUser(string memory _name, string memory _password) public returns (bool) {
     require(bytes(users[msg.sender].name).length > 0, "User is not registered");
