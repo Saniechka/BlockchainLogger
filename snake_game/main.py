@@ -3,6 +3,29 @@ from pygame.locals import *
 import time
 import random
 import logging
+from pyDes import des, PAD_PKCS5
+import base64
+
+
+key = "DESCRYPT"
+def encrypt_data(key, data):
+    k = des(key, padmode=PAD_PKCS5)
+    encrypted_data = k.encrypt(data)
+    return base64.b64encode(encrypted_data)
+
+def decrypt_data(key, encrypted_data):
+    k = des(key, padmode=PAD_PKCS5)
+    decrypted_data = k.decrypt(base64.b64decode(encrypted_data))
+    return decrypted_data
+
+
+    
+
+    
+
+
+
+
 
 
 
@@ -39,6 +62,13 @@ critical_file_handler.setFormatter(critical_formatter)
 
 critical_logger.addHandler(critical_file_handler)
 
+
+
+
+def encrypt_and_log_critical(key, message):
+    encrypted_message = encrypt_data(key, message)
+    encrypted_message_str = encrypted_message.decode('utf-8')  
+    critical_logger.critical(encrypted_message_str)
 
 
 SIZE=40
@@ -128,7 +158,7 @@ class Game:
     def __init__(self):
         pygame.init()
         logger.info(" NEW Game")
-        critical_logger.critical("NEW GAME")
+        encrypt_and_log_critical(key,"NEW GAME")
         self.surface = pygame.display.set_mode((600,600))
         #self.surface.fill((110,110,5))
         self.snake = Snake(self.surface,5)
@@ -167,7 +197,7 @@ class Game:
         # eate snake xd
         for i in range(1, self.snake.length):
             if self.is_collision(self.snake.x[0],self.snake.y[0],self.snake.x[i],self.snake.y[i]):
-                critical_logger.critical('EAT_SNAKE')
+                encrypt_and_log_critical(key,"EAT SNAKE")
                 logger.info('EAT SNAKE')
                 raise("game over xd")
         
@@ -178,7 +208,7 @@ class Game:
         self.snake.y[0] >= 600
     ):
             logger.info('Sciana')
-            critical_logger.critical('SCIANA')
+            encrypt_and_log_critical(key,"SCIANA")
             raise Exception("game over xd")
                 
 
@@ -196,7 +226,7 @@ class Game:
 
     def reset(self):
         logger.info('RESTART. NEW GAME')
-        critical_logger.critical("RESTART")
+        encrypt_and_log_critical(key,"RESTART")
         self.snake = Snake(self.surface,4)
         self.apple = Apple(self.surface)
         
@@ -243,7 +273,7 @@ class Game:
             except Exception as e:
                 self.game_over()
                 logger.info('GAME_OVER')
-                critical_logger.critical('GAME_OVER')
+                encrypt_and_log_critical(key,"GAME OVER")
                 pause =True    
                 
             time.sleep(.4)
