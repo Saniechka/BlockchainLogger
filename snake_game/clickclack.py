@@ -7,9 +7,9 @@ from hexbytes import HexBytes
 @click.pass_context
 def cli(ctx):
     pass
+#can be only 1 admin
 
-#TODO  change names of functions check adminOnly  delete useless blocks of code
-# add logs to file add  addlogs bug in details function setadmin problem
+#TODO     add logs to file  bug in details function 
 
 
 
@@ -20,7 +20,7 @@ def load_config():
             config_data = json.load(file)
         return config_data
     except FileNotFoundError:
-        print("Конфигурационный файл не найден. Пожалуйста, запустите команду 'init' сначала.")
+        print("config file problem")
         return None
 
 #help function
@@ -39,9 +39,11 @@ def get_contract_and_credentials():
 
     web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
     contract = web3.eth.contract(address=contract_address, abi=contract_abi)
-    web3.eth.default_account = wallet_address
+     
 
     return contract, wallet_address, private_key
+
+
 
 
 
@@ -50,7 +52,7 @@ def get_contract_and_credentials():
 @click.option('--wallet_address', help='Your wallet address ')
 @click.option('--private_key', help='Your private key.')
 
-def init(ctx, wallet_address, private_key): 
+def init(wallet_address, private_key): 
     
 
     sepolia_rpc_url = "https://sepolia.base.org"
@@ -84,7 +86,7 @@ def init(ctx, wallet_address, private_key):
 def register_user(address, login, password):
 
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
 
     transaction = contract.functions.registerUser(
@@ -124,28 +126,12 @@ def getUserDetails( address):
     
 
 
-
-   
-    
-    
-
-
-@cli.command(help= 'check if user logged')
-@click.option('--address', help='User address')
-def isUserLoggedIn( address):
-
-    contract, wallet_address, private_key = get_contract_and_credentials()
-
-    is_logged_in = contract.functions.isUserLoggedIn(address).call({'from': wallet_address})
-    print("Is user logged in:", is_logged_in)
-
-
 @cli.command(help = 'adminOnly add new admin')
 @click.option('--address', help='New admin address')
 
-def setAdmin(address):
+def set_Admin(address):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.setAdmin(address).build_transaction({
         'chainId': chain_id,
@@ -166,9 +152,8 @@ def setAdmin(address):
 @click.option('--log_data', help='Log data to add')
 def add_log( log_data):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
    
-
     transaction = contract.functions.addLog(log_data).build_transaction({
         'chainId': chain_id,
         'gas': 1000000,
@@ -189,9 +174,9 @@ def add_log( log_data):
 @cli.command(help = 'adminOnly add new superuser')
 @click.option('--address', help='New admin address')
 
-def setSuperUser(address):
+def set_SuperUser(address):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.setSuperuser(address).build_transaction({
         'chainId': chain_id,
@@ -215,7 +200,7 @@ def setSuperUser(address):
 
 def change_user_password( address, new_password):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.changeUserPassword(
         address, new_password
@@ -240,7 +225,7 @@ def change_user_password( address, new_password):
 @click.option('--new_name', help='New user name')
 def change_user_name(address, new_name):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.changeUserName(
         address, new_name
@@ -265,7 +250,7 @@ def change_user_name(address, new_name):
 
 def change_my_password(new_password):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.changeMyPassword(
         new_password
@@ -288,9 +273,9 @@ def change_my_password(new_password):
 @cli.command(help = 'comand for logging')
 @click.option('--user_login', help='User login')
 @click.option('--user_password', help='User password')
-def login_user(user_login, user_password):
+def login(user_login, user_password):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.loginUser(
          user_login, user_password
@@ -311,9 +296,9 @@ def login_user(user_login, user_password):
 
 
 @cli.command(help ='log out')
-def logout_user( ):
+def logout( ):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
 
     transaction = contract.functions.logoutUser(
          
@@ -338,7 +323,7 @@ def logout_user( ):
 @click.option('--user_address', help='User address')
 def get_user_logs(user_address):
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
     user_logs = contract.functions.getLogs(user_address,).call({'from': wallet_address})
     
     print("User Logs:")
@@ -351,7 +336,7 @@ def get_user_logs(user_address):
 def get_all_users():
 
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
     users = contract.functions.getAllUsers().call({'from': wallet_address})
 
     print("List of all users:")
@@ -361,10 +346,10 @@ def get_all_users():
 
 
 @cli.command(help= 'See my status')
-def view_my_status( ):
+def view_my_role( ):
     
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
     user_status = contract.functions.viewUserStatus().call({'from': wallet_address})
     
     print(user_status)
@@ -375,7 +360,6 @@ def view_my_status( ):
 def view_my_logs():
 
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
     my_logs = contract.functions.viewMyLogs().call({'from': wallet_address})
     
     print("My Logs:")
@@ -388,7 +372,6 @@ def view_my_logs():
 def adminAddres():
     
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
     admin_address = contract.functions.adminAddress().call({'from': wallet_address})
 
     print("AdminAddres:", admin_address)
@@ -399,7 +382,7 @@ def adminAddres():
 def superuserAddres():
 
     contract, wallet_address, private_key = get_contract_and_credentials()
-    web3.eth.default_account = wallet_address
+     
     superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
 
     print("superuserAddres:", admin_address)
@@ -408,12 +391,21 @@ def superuserAddres():
 
 @cli.command(help= 'adminOnly check user role')
 @click.option('--address', help='User address')
-def checkUserStatus(address):
+def check_User_Role(address):
     contract, wallet_address, private_key = get_contract_and_credentials()
     address = Web3.to_checksum_address(address)
     user_status = contract.functions.checkUserStatus(address).call({'from': wallet_address})
 
     print("User status:", user_status)
+
+@cli.command(help= 'check if user logged')
+@click.option('--address', help='User address')
+def is_User_Logged_In( address):
+
+    contract, wallet_address, private_key = get_contract_and_credentials()
+    is_logged_in = contract.functions.isUserLoggedIn(address).call({'from': wallet_address})
+    
+    print("Is user logged in:", is_logged_in)
 
 if __name__ == '__main__':
     cli()

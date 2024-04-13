@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12 <0.9.0;
 
-//CHECK IF ADMIN LOGGED
+
 contract Auth {
      address public adminAddress;
     address public superuserAddress;
@@ -48,10 +48,19 @@ contract Auth {
         _;
     }
 
+     modifier onlyUser() {
+    require(bytes(users[msg.sender].name).length > 0, "Only registered users can call this function");
+    require(users[msg.sender].isUserLoggedIn, "User must be logged in");
+    _;
+}
+
     function getUserDetails(address _userAddress) public view onlyAdmin returns (string memory name,string memory password, bool isLoggedIn, string memory role) {
         UserDetail memory user = users[_userAddress];
         return (user.name,user.password, user.isUserLoggedIn, userRoleToString(user.role));
     }
+
+
+   
 
     function userRoleToString(UserRole role) private pure returns (string memory) {
         if (role == UserRole.Admin) {
@@ -64,7 +73,7 @@ contract Auth {
     }
 
 
-
+//userrole
     function checkUserStatus(address _userAddress) public view onlyAdmin returns (string memory) {
     UserDetail memory user = users[_userAddress];
     require(bytes(user.name).length > 0, "User is not registered");
@@ -80,7 +89,7 @@ contract Auth {
 }
 
 
-function isUserLoggedIn(address _userAddress) public view returns (bool) {
+function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     UserDetail memory user = users[_userAddress];
     require(bytes(user.name).length > 0, "User is not registered");
     return user.isUserLoggedIn;
@@ -88,11 +97,7 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
 
 
 
-   modifier onlyUser() {
-    require(bytes(users[msg.sender].name).length > 0, "Only registered users can call this function");
-    require(users[msg.sender].isUserLoggedIn, "User must be logged in");
-    _;
-}
+  
 
     function setSuperuser(address _superuserAddress) public onlyAdmin {
         superuserAddress = _superuserAddress;
@@ -140,7 +145,7 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
 
 
    
-
+//login
    function loginUser(string memory _name, string memory _password) public returns (bool) {
     require(bytes(users[msg.sender].name).length > 0, "User is not registered");
     require(keccak256(abi.encodePacked(users[msg.sender].name)) == keccak256(abi.encodePacked(_name)), "Invalid name");
@@ -160,8 +165,8 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
             logData: _logData
         }));
     }
-
-    function getLogs(address _userAddress) public view returns (LogEntry[] memory) {
+//getanotheruser logs
+    function getLogs(address _userAddress) public view onlyAdminOrSuperuser returns (LogEntry[] memory) {
         return logs[_userAddress];
     }
 
@@ -172,7 +177,7 @@ function isUserLoggedIn(address _userAddress) public view returns (bool) {
     function viewMyLogs() public view onlyUser returns (LogEntry[] memory) {
     return getLogs(msg.sender);
 }
-
+//see my userrole
     function viewUserStatus() public view onlyUser returns (string memory) {
         if (msg.sender == adminAddress) {
             return "Admin";
