@@ -230,6 +230,83 @@ def setAdmin(address):
     print("ok")
 
 
+@cli.command(help='Add log entry for a user')
+@click.option('--log_data', help='Log data to add')
+def add_log( log_data):
+    config_data = load_config()
+    if config_data is None:
+        return
+
+    with open('contract_abi.json', 'r') as file:
+        contract_abi = json.load(file)
+
+    wallet_address = config_data['wallet_address']
+    private_key = config_data['private_key']
+    chain_id = config_data['chain_id']
+    contract_address = config_data['contract_address']
+    sepolia_rpc_url = config_data['sepolia_rpc_url']
+
+    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
+    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    web3.eth.default_account = wallet_address
+   
+
+    transaction = contract.functions.addLog(log_data).build_transaction({
+        'chainId': chain_id,
+        'gas': 1000000,
+        'gasPrice': web3.to_wei('5', 'gwei'),
+        'nonce': web3.eth.get_transaction_count(wallet_address),
+    })
+
+    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+    print(receipt)
+    if receipt.status == 1:
+        print("Log entry added successfully")
+
+
+
+@cli.command(help = 'adminOnly add new superuser')
+@click.option('--address', help='New admin address')
+
+def setSuperUser(address):
+    config_data = load_config()
+    if config_data is None:
+        return
+
+
+    with open('contract_abi.json', 'r') as file:
+        contract_abi = json.load(file)
+
+    wallet_address = config_data['wallet_address']
+    private_key = config_data['private_key']
+    chain_id = config_data['chain_id']
+    contract_address = config_data['contract_address']
+    sepolia_rpc_url= config_data['sepolia_rpc_url']
+
+    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
+    with open('contract_abi.json', 'r') as file:
+        contract_abi = json.load(file)
+    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    web3.eth.default_account = wallet_address
+
+    transaction = contract.functions.setSuperuser(address).build_transaction({
+        'chainId': chain_id,
+        'gas': 1000000,
+        'gasPrice': web3.to_wei('5', 'gwei'),
+        'nonce': web3.eth.get_transaction_count(wallet_address),
+    })
+
+    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+    print(receipt)
+    print("ok")
+
+
 
 @cli.command(help= 'adminOnly change another user password')
 @click.option('--address', help='User address')
@@ -440,7 +517,7 @@ def logout_user( ):
     if receipt.status == 1:
         print("logout succes")
 
-#
+
 
 @cli.command(help = 'AdminOnly get anotheruser logs')
 @click.option('--user_address', help='User address')
