@@ -440,7 +440,7 @@ def logout_user( ):
     if receipt.status == 1:
         print("logout succes")
 
-
+#
 
 @cli.command(help = 'AdminOnly get anotheruser logs')
 @click.option('--user_address', help='User address')
