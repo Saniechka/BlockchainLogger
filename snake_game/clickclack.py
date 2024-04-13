@@ -7,10 +7,10 @@ from hexbytes import HexBytes
 @click.pass_context
 def cli(ctx):
     pass
+
+
 #can be only 1 admin
-
-#TODO    bug in details function 
-
+#loginadmin
 
 
 #help function
@@ -44,9 +44,6 @@ def get_contract_and_credentials():
     return contract, wallet_address, private_key
 
 
-
-
-
 # init change?
 @cli.command(help='Initialization')
 @click.option('--wallet_address', help='Your wallet address ')
@@ -62,7 +59,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0x079296643e39A7E5e872ba9a76c8d4E138F00209'
+    contract_address = '0xfE4F1cc76719d1a16F4ff7AA7fa0a93202Bdfa22'
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -112,17 +109,23 @@ def register_user(address, login, password):
 def getUserDetails( address):
     contract, wallet_address, private_key = get_contract_and_credentials()
     
-    result = contract.functions.getUserDetails(address).call({'from': wallet_address})
+    result1 = contract.functions.getUserDetails(address).call({'from': wallet_address})
+    
 
+
+    result = result1.split(",")
+    
     name = result[0]
     password = result[1]
     is_logged_in = result[2]
     role = result[3]
 
+
     print("Name:", name)
     print("Password:", password)
     print("Is Logged In:", is_logged_in)
     print("Role:", role)
+   
     
 
 

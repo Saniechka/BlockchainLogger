@@ -54,10 +54,12 @@ contract Auth {
     _;
 }
 
-    function getUserDetails(address _userAddress) public view onlyAdmin returns (string memory name,string memory password, bool isLoggedIn, string memory role) {
+    function getUserDetails(address _userAddress) public view onlyAdmin returns (string memory) {
         UserDetail memory user = users[_userAddress];
-        return (user.name,user.password, user.isUserLoggedIn, userRoleToString(user.role));
+        string memory userDetails = string(abi.encodePacked(user.name, ",", user.password, ",", user.isUserLoggedIn ? "true" : "false", ",", userRoleToString(user.role)));
+        return userDetails;
     }
+
 
 
    
@@ -116,8 +118,8 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     users[_userAddress].name = _name;
     users[_userAddress].password = _password;
     users[_userAddress].isUserLoggedIn = false;
-    users[_userAddress].role = UserRole.User; // Установка роли пользователя
-    users[_userAddress].isSuperuser = false; // Установка isSuperuser в false по умолчанию
+    users[_userAddress].role = UserRole.User; 
+    users[_userAddress].isSuperuser = false; 
     userList.push(_userAddress);
     emit UserRegistered(_userAddress, _name, false);
     return true;
@@ -138,7 +140,7 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
 
 
     function changeMyPassword(string memory _newPassword) public onlyUser {
-    // Использует msg.sender для идентификации пользователя, который вызывает функцию
+    
     users[msg.sender].password = _newPassword;
     emit UserPasswordChanged(msg.sender, _newPassword);
 }
