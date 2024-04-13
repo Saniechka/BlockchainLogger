@@ -8,9 +8,12 @@ from hexbytes import HexBytes
 def cli(ctx):
     pass
 
-#TODO check call and send change names of functions check adminOnly  delete useless blocks of code
+#TODO  change names of functions check adminOnly  delete useless blocks of code
 # add logs to file add  addlogs bug in details function setadmin problem
 
+
+
+#help function
 def load_config():
     try:
         with open('config.json', 'r') as file:
@@ -20,7 +23,7 @@ def load_config():
         print("Конфигурационный файл не найден. Пожалуйста, запустите команду 'init' сначала.")
         return None
 
-
+#help function
 def get_contract_and_credentials():
     with open('contract_abi.json', 'r') as file:
         contract_abi = json.load(file)
@@ -41,6 +44,8 @@ def get_contract_and_credentials():
     return contract, wallet_address, private_key
 
 
+
+# init change?
 @cli.command(help='Initialization')
 @click.option('--wallet_address', help='Your wallet address ')
 @click.option('--private_key', help='Your private key.')
@@ -71,9 +76,6 @@ def init(ctx, wallet_address, private_key):
 
 
 
-
-    
-# Команда для регистрации нового пользователя
 @cli.command(help= 'adminOnly register new user')
 @click.option('--address', help='New user address')
 @click.option('--login', help='New user login')
@@ -81,24 +83,7 @@ def init(ctx, wallet_address, private_key):
 
 def register_user(address, login, password):
 
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
 
@@ -122,25 +107,8 @@ def register_user(address, login, password):
 #problem
 @cli.command()
 @click.option('--address', help='User address')
-
 def getUserDetails( address):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-        contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     
     result = contract.functions.getUserDetails(address).call({'from': wallet_address})
 
@@ -156,32 +124,7 @@ def getUserDetails( address):
     
 
 
-@cli.command(help= 'adminOnly check user role')
-@click.option('--address', help='User address')
 
-def checkUserStatus(address):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
-    address = Web3.to_checksum_address(address)
-
-    user_status = contract.functions.checkUserStatus(address).call({'from': wallet_address})
-    print("User status:", user_status)
    
     
     
@@ -201,24 +144,7 @@ def isUserLoggedIn( address):
 @click.option('--address', help='New admin address')
 
 def setAdmin(address):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.setAdmin(address).build_transaction({
@@ -239,21 +165,7 @@ def setAdmin(address):
 @cli.command(help='Add log entry for a user')
 @click.option('--log_data', help='Log data to add')
 def add_log( log_data):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
    
 
@@ -278,24 +190,7 @@ def add_log( log_data):
 @click.option('--address', help='New admin address')
 
 def setSuperUser(address):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.setSuperuser(address).build_transaction({
@@ -319,22 +214,7 @@ def setSuperUser(address):
 @click.option('--new_password', help='New password')
 
 def change_user_password( address, new_password):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.changeUserPassword(
@@ -359,22 +239,7 @@ def change_user_password( address, new_password):
 @click.option('--address', help='User address')
 @click.option('--new_name', help='New user name')
 def change_user_name(address, new_name):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.changeUserName(
@@ -399,25 +264,7 @@ def change_user_name(address, new_name):
 @click.option('--new_password', help='New password')
 
 def change_my_password(new_password):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.changeMyPassword(
@@ -442,29 +289,7 @@ def change_my_password(new_password):
 @click.option('--user_login', help='User login')
 @click.option('--user_password', help='User password')
 def login_user(user_login, user_password):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.loginUser(
@@ -487,23 +312,7 @@ def login_user(user_login, user_password):
 
 @cli.command(help ='log out')
 def logout_user( ):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-   
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
 
     transaction = contract.functions.logoutUser(
@@ -527,176 +336,84 @@ def logout_user( ):
 
 @cli.command(help = 'AdminOnly get anotheruser logs')
 @click.option('--user_address', help='User address')
-
-
 def get_user_logs(user_address):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
-
     user_logs = contract.functions.getLogs(user_address,).call({'from': wallet_address})
+    
     print("User Logs:")
     for user_log in user_logs:
         print(user_log)
-    
+
 
 
 @cli.command(help= 'onlyAdmin get list of all users')
 def get_all_users():
-    config_data = load_config()
-    if config_data is None:
-        return
 
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
     users = contract.functions.getAllUsers().call({'from': wallet_address})
+
     print("List of all users:")
     for user_address in users:
         print(user_address)
 
 
 
-
 @cli.command(help= 'See my status')
-
 def view_my_status( ):
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url = config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
-
     user_status = contract.functions.viewUserStatus().call({'from': wallet_address})
     
     print(user_status)
 
 
 
-
-
 @cli.command(help= 'view my logs')
-
 def view_my_logs():
 
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
-
     my_logs = contract.functions.viewMyLogs().call({'from': wallet_address})
+    
     print("My Logs:")
     for log in my_logs:
         print(log)
 
 
+
 @cli.command(help = 'see admin addres')
 def adminAddres():
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
-
     admin_address = contract.functions.adminAddress().call({'from': wallet_address})
 
     print("AdminAddres:", admin_address)
 
 
 
-
 @cli.command(help = 'see admin addres')
 def superuserAddres():
 
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    config_data = load_config()
-    if config_data is None:
-        return
-
-
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    contract, wallet_address, private_key = get_contract_and_credentials()
     web3.eth.default_account = wallet_address
-
     superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
 
     print("superuserAddres:", admin_address)
+
+
+
+@cli.command(help= 'adminOnly check user role')
+@click.option('--address', help='User address')
+def checkUserStatus(address):
+    contract, wallet_address, private_key = get_contract_and_credentials()
+    address = Web3.to_checksum_address(address)
+    user_status = contract.functions.checkUserStatus(address).call({'from': wallet_address})
+
+    print("User status:", user_status)
 
 if __name__ == '__main__':
     cli()
