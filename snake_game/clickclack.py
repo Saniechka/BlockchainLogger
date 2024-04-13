@@ -9,7 +9,7 @@ def cli(ctx):
     pass
 #can be only 1 admin
 
-#TODO     add logs to file  bug in details function 
+#TODO    bug in details function 
 
 
 
@@ -319,16 +319,24 @@ def logout( ):
 
 
 
-@cli.command(help = 'AdminOnly get anotheruser logs')
+@cli.command(help='AdminOnly get another user logs')
 @click.option('--user_address', help='User address')
-def get_user_logs(user_address):
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
+def get_user_logs(user_address, output_file):
     contract, wallet_address, private_key = get_contract_and_credentials()
      
-    user_logs = contract.functions.getLogs(user_address,).call({'from': wallet_address})
+    user_logs = contract.functions.getLogs(user_address).call({'from': wallet_address})
     
-    print("User Logs:")
-    for user_log in user_logs:
-        print(user_log)
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write("User Logs:\n")
+            for user_log in user_logs:
+                f.write(str(user_log) + '\n')
+        print(f"User logs saved to {output_file}")
+    else:
+        print("User Logs:")
+        for user_log in user_logs:
+            print(user_log)
 
 
 
@@ -357,14 +365,22 @@ def view_my_role( ):
 
 
 @cli.command(help= 'view my logs')
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_my_logs():
 
     contract, wallet_address, private_key = get_contract_and_credentials()
     my_logs = contract.functions.viewMyLogs().call({'from': wallet_address})
     
-    print("My Logs:")
-    for log in my_logs:
-        print(log)
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write("My Logs:\n")
+            for my_log in my_logs:
+                f.write(str(my_log) + '\n')
+        print(f"Your logs saved to {output_file}")
+    else:
+        print("My Logs:")
+        for my_log in my_logs:
+            print(my_log)
 
 
 
