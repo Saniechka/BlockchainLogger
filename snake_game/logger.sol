@@ -13,7 +13,7 @@ contract Auth {
     string password;
     bool isUserLoggedIn;
     UserRole role;
-    bool isSuperuser; // Добавлено поле isSuperuser
+    bool isSuperuser; 
 }
 
 
@@ -76,7 +76,7 @@ contract Auth {
 
 
 //userrole
-    function checkUserStatus(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
+    function checkUserRole(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
     UserDetail memory user = users[_userAddress];
     require(bytes(user.name).length > 0, "User is not registered");
     if (_userAddress == adminAddress) {
@@ -148,7 +148,7 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
 
    
 //login
-   function loginUser(string memory _name, string memory _password) public returns (bool) {
+   function login(string memory _name, string memory _password) public returns (bool) {
     require(bytes(users[msg.sender].name).length > 0, "User is not registered");
     require(keccak256(abi.encodePacked(users[msg.sender].name)) == keccak256(abi.encodePacked(_name)), "Invalid name");
     require(keccak256(bytes(users[msg.sender].password)) == keccak256(bytes(_password)), "Invalid password");
@@ -168,7 +168,7 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
         }));
     }
 //getanotheruser logs
-    function getLogs(address _userAddress) public view onlyUser onlyAdminOrSuperuser returns (LogEntry[] memory) {
+    function getUserLogs(address _userAddress) public view onlyUser onlyAdminOrSuperuser returns (LogEntry[] memory) {
         return logs[_userAddress];
     }
 
@@ -177,10 +177,10 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     }
 
     function viewMyLogs() public view onlyUser returns (LogEntry[] memory) {
-    return getLogs(msg.sender);
+    return getUserLogs(msg.sender);
 }
 //see my userrole
-    function viewUserStatus() public view onlyUser returns (string memory) {
+    function viewMyRole() public view onlyUser returns (string memory) {
         if (msg.sender == adminAddress) {
             return "Admin";
         } else if (msg.sender == superuserAddress) {

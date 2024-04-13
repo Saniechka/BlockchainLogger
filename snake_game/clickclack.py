@@ -280,7 +280,7 @@ def login(user_login, user_password):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
-    transaction = contract.functions.loginUser(
+    transaction = contract.functions.login(
          user_login, user_password
     ).build_transaction({
         'chainId': chain_id,
@@ -328,7 +328,7 @@ def logout( ):
 def get_user_logs(user_address, output_file):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
-    user_logs = contract.functions.getLogs(user_address).call({'from': wallet_address})
+    user_logs = contract.functions.getUserLogs(user_address).call({'from': wallet_address})
     
     if output_file:
         with open(output_file, 'w') as f:
@@ -361,7 +361,7 @@ def view_my_role( ):
     
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
-    user_status = contract.functions.viewUserStatus().call({'from': wallet_address})
+    user_status = contract.functions.viewMyRole().call({'from': wallet_address})
     
     print(user_status)
 
@@ -413,7 +413,7 @@ def superuserAddres():
 def check_User_Role(address):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     address = Web3.to_checksum_address(address)
-    user_status = contract.functions.checkUserStatus(address).call({'from': wallet_address})
+    user_status = contract.functions.checkUserRole(address).call({'from': wallet_address})
 
     print("User status:", user_status)
 

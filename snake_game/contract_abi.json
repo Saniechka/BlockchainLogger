@@ -176,7 +176,7 @@
 				"type": "address"
 			}
 		],
-		"name": "checkUserStatus",
+		"name": "checkUserRole",
 		"outputs": [
 			{
 				"internalType": "string",
@@ -208,19 +208,12 @@
 				"type": "address"
 			}
 		],
-		"name": "getLogs",
+		"name": "getUserDetails",
 		"outputs": [
 			{
-				"components": [
-					{
-						"internalType": "string",
-						"name": "logData",
-						"type": "string"
-					}
-				],
-				"internalType": "struct Auth.LogEntry[]",
+				"internalType": "string",
 				"name": "",
-				"type": "tuple[]"
+				"type": "string"
 			}
 		],
 		"stateMutability": "view",
@@ -234,12 +227,19 @@
 				"type": "address"
 			}
 		],
-		"name": "getUserDetails",
+		"name": "getUserLogs",
 		"outputs": [
 			{
-				"internalType": "string",
+				"components": [
+					{
+						"internalType": "string",
+						"name": "logData",
+						"type": "string"
+					}
+				],
+				"internalType": "struct Auth.LogEntry[]",
 				"name": "",
-				"type": "string"
+				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",
@@ -277,7 +277,7 @@
 				"type": "string"
 			}
 		],
-		"name": "loginUser",
+		"name": "login",
 		"outputs": [
 			{
 				"internalType": "bool",
@@ -467,7 +467,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "viewUserStatus",
+		"name": "viewMyRole",
 		"outputs": [
 			{
 				"internalType": "string",
