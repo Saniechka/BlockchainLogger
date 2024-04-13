@@ -54,7 +54,7 @@ contract Auth {
     _;
 }
 
-    function getUserDetails(address _userAddress) public view onlyAdmin returns (string memory) {
+    function getUserDetails(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
         UserDetail memory user = users[_userAddress];
         string memory userDetails = string(abi.encodePacked(user.name, ",", user.password, ",", user.isUserLoggedIn ? "true" : "false", ",", userRoleToString(user.role)));
         return userDetails;
@@ -76,7 +76,7 @@ contract Auth {
 
 
 //userrole
-    function checkUserStatus(address _userAddress) public view onlyAdmin returns (string memory) {
+    function checkUserStatus(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
     UserDetail memory user = users[_userAddress];
     require(bytes(user.name).length > 0, "User is not registered");
     if (_userAddress == adminAddress) {
@@ -101,11 +101,11 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
 
   
 
-    function setSuperuser(address _superuserAddress) public onlyAdmin {
+    function setSuperuser(address _superuserAddress) public onlyUser onlyAdmin {
         superuserAddress = _superuserAddress;
     }
 
-    function setAdmin(address _adminAddress) public onlyAdmin {
+    function setAdmin(address _adminAddress) public onlyUser onlyAdmin {
         adminAddress = _adminAddress;
     }
 
@@ -125,13 +125,13 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     return true;
 }
 
-    function changeUserPassword(address _userAddress, string memory _newPassword) public onlyAdmin {
+    function changeUserPassword(address _userAddress, string memory _newPassword) public onlyUser onlyAdmin {
         require(_userAddress == msg.sender, "Only the user can change their password");
         users[_userAddress].password = _newPassword;
         emit UserPasswordChanged(_userAddress, _newPassword);
     }
 
-    function changeUserName(address _userAddress, string memory _newName) public onlyAdmin {
+    function changeUserName(address _userAddress, string memory _newName) public onlyUser onlyAdmin {
         
         users[_userAddress].name = _newName;
         emit UserNameChanged(_userAddress, _newName);
@@ -168,11 +168,11 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
         }));
     }
 //getanotheruser logs
-    function getLogs(address _userAddress) public view onlyAdminOrSuperuser returns (LogEntry[] memory) {
+    function getLogs(address _userAddress) public view onlyUser onlyAdminOrSuperuser returns (LogEntry[] memory) {
         return logs[_userAddress];
     }
 
-    function getAllUsers() public view onlyAdmin returns (address[] memory) {
+    function getAllUsers() public view onlyUser onlyAdmin returns (address[] memory) {
         return userList;
     }
 

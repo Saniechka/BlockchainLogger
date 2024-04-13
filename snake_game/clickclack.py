@@ -41,7 +41,7 @@ def get_contract_and_credentials():
     contract = web3.eth.contract(address=contract_address, abi=contract_abi)
      
 
-    return contract, wallet_address, private_key
+    return contract, wallet_address, private_key,chain_id,web3
 
 
 # init change?
@@ -59,7 +59,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0xfE4F1cc76719d1a16F4ff7AA7fa0a93202Bdfa22'
+    contract_address = '0x60d119B51c6d9c4346E761f5DF2177881C28dF1C'
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -82,7 +82,7 @@ def init(wallet_address, private_key):
 
 def register_user(address, login, password):
 
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
 
@@ -107,7 +107,7 @@ def register_user(address, login, password):
 @cli.command()
 @click.option('--address', help='User address')
 def getUserDetails( address):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     
     result1 = contract.functions.getUserDetails(address).call({'from': wallet_address})
     
@@ -133,7 +133,7 @@ def getUserDetails( address):
 @click.option('--address', help='New admin address')
 
 def set_Admin(address):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.setAdmin(address).build_transaction({
@@ -154,7 +154,7 @@ def set_Admin(address):
 @cli.command(help='Add log entry for a user')
 @click.option('--log_data', help='Log data to add')
 def add_log( log_data):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
    
     transaction = contract.functions.addLog(log_data).build_transaction({
@@ -178,7 +178,7 @@ def add_log( log_data):
 @click.option('--address', help='New admin address')
 
 def set_SuperUser(address):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.setSuperuser(address).build_transaction({
@@ -202,7 +202,7 @@ def set_SuperUser(address):
 @click.option('--new_password', help='New password')
 
 def change_user_password( address, new_password):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.changeUserPassword(
@@ -227,7 +227,7 @@ def change_user_password( address, new_password):
 @click.option('--address', help='User address')
 @click.option('--new_name', help='New user name')
 def change_user_name(address, new_name):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.changeUserName(
@@ -252,7 +252,7 @@ def change_user_name(address, new_name):
 @click.option('--new_password', help='New password')
 
 def change_my_password(new_password):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.changeMyPassword(
@@ -277,7 +277,7 @@ def change_my_password(new_password):
 @click.option('--user_login', help='User login')
 @click.option('--user_password', help='User password')
 def login(user_login, user_password):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.loginUser(
@@ -300,7 +300,7 @@ def login(user_login, user_password):
 
 @cli.command(help ='log out')
 def logout( ):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.logoutUser(
@@ -326,7 +326,7 @@ def logout( ):
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def get_user_logs(user_address, output_file):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
     user_logs = contract.functions.getLogs(user_address).call({'from': wallet_address})
     
@@ -346,7 +346,7 @@ def get_user_logs(user_address, output_file):
 @cli.command(help= 'onlyAdmin get list of all users')
 def get_all_users():
 
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
     users = contract.functions.getAllUsers().call({'from': wallet_address})
 
@@ -359,7 +359,7 @@ def get_all_users():
 @cli.command(help= 'See my status')
 def view_my_role( ):
     
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
     user_status = contract.functions.viewUserStatus().call({'from': wallet_address})
     
@@ -371,7 +371,7 @@ def view_my_role( ):
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_my_logs():
 
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     my_logs = contract.functions.viewMyLogs().call({'from': wallet_address})
     
     if output_file:
@@ -390,7 +390,7 @@ def view_my_logs():
 @cli.command(help = 'see admin addres')
 def adminAddres():
     
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     admin_address = contract.functions.adminAddress().call({'from': wallet_address})
 
     print("AdminAddres:", admin_address)
@@ -400,7 +400,7 @@ def adminAddres():
 @cli.command(help = 'see admin addres')
 def superuserAddres():
 
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
     superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
 
@@ -411,7 +411,7 @@ def superuserAddres():
 @cli.command(help= 'adminOnly check user role')
 @click.option('--address', help='User address')
 def check_User_Role(address):
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     address = Web3.to_checksum_address(address)
     user_status = contract.functions.checkUserStatus(address).call({'from': wallet_address})
 
@@ -421,7 +421,7 @@ def check_User_Role(address):
 @click.option('--address', help='User address')
 def is_User_Logged_In( address):
 
-    contract, wallet_address, private_key = get_contract_and_credentials()
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     is_logged_in = contract.functions.isUserLoggedIn(address).call({'from': wallet_address})
     
     print("Is user logged in:", is_logged_in)
