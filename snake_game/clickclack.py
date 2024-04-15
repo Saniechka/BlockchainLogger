@@ -59,7 +59,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0x60d119B51c6d9c4346E761f5DF2177881C28dF1C'
+    contract_address = '0xa73647049810bC55f406545745703d62Df7b87fa'
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -104,7 +104,7 @@ def register_user(address, login, password):
         print('OK')
 
 #problem
-@cli.command()
+@cli.command(help = 'ADMINONLY get user profile')
 @click.option('--address', help='User address')
 def getUserDetails( address):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
@@ -274,14 +274,14 @@ def change_my_password(new_password):
 
 
 @cli.command(help = 'comand for logging')
-@click.option('--user_login', help='User login')
-@click.option('--user_password', help='User password')
-def login(user_login, user_password):
+@click.option('--login', help='User login')
+@click.option('--password', help='User password')
+def login(login, password):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
     transaction = contract.functions.login(
-         user_login, user_password
+         login, password
     ).build_transaction({
         'chainId': chain_id,
         'gas': 1000000,
@@ -367,9 +367,10 @@ def view_my_role( ):
 
 
 
+
 @cli.command(help= 'view my logs')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_my_logs():
+def view_my_logs(output_file):
 
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
     my_logs = contract.functions.viewMyLogs().call({'from': wallet_address})

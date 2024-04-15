@@ -177,7 +177,7 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     }
 
     function viewMyLogs() public view onlyUser returns (LogEntry[] memory) {
-    return getUserLogs(msg.sender);
+    return logs[msg.sender];
 }
 //see my userrole
     function viewMyRole() public view onlyUser returns (string memory) {
