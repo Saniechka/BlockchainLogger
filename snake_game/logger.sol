@@ -19,12 +19,14 @@ contract Auth {
 
     mapping(address => UserDetail) public users;
     address[] public userList;
+    
 
     struct LogEntry {
         string logData;
     }
 
     mapping(address => LogEntry[]) public logs;
+    LogEntry[] public publicLogs;
 
     event UserRegistered(address indexed userAddress, string name, bool isUserLoggedIn);
     event UserPasswordChanged(address indexed userAddress, string newPassword);
@@ -167,10 +169,24 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
             logData: _logData
         }));
     }
+
+
+    function addPublicLog(string memory _logData) public onlyAdminOrSuperuser {
+    publicLogs.push(LogEntry({
+        logData: _logData
+    }));
+}
+
+
+    function getPublicLogs() public view  returns (LogEntry[] memory) {
+        return publicLogs;
+    }
 //getanotheruser logs
     function getUserLogs(address _userAddress) public view onlyUser onlyAdminOrSuperuser returns (LogEntry[] memory) {
         return logs[_userAddress];
     }
+
+    
 
     function getAllUsers() public view onlyUser onlyAdmin returns (address[] memory) {
         return userList;

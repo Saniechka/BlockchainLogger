@@ -50,6 +50,9 @@ def get_contract_and_credentials():
 @click.option('--private_key', help='Your private key.')
 
 def init(wallet_address, private_key): 
+    if not wallet_address or not private_key:
+        print("Error: Please provide both wallet address and private key.")
+        return
     
 
     sepolia_rpc_url = "https://sepolia.base.org"
@@ -59,7 +62,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0xa73647049810bC55f406545745703d62Df7b87fa'
+    contract_address = '0x6551db43f0f854A5101E89162d2cC151285630e7'
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -173,6 +176,26 @@ def add_log( log_data):
         print("Log entry added successfully")
 
 
+@cli.command(help=' ONLYADMIN OR SUPERUSER Add piblic log entry' )
+@click.option('--log_data', help='Log data to add')
+def add_public_log( log_data):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+   
+    transaction = contract.functions.addPublicLog(log_data).build_transaction({
+        'chainId': chain_id,
+        'gas': 1000000,
+        'gasPrice': web3.to_wei('5', 'gwei'),
+        'nonce': web3.eth.get_transaction_count(wallet_address),
+    })
+
+    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+    print(receipt)
+    if receipt.status == 1:
+        print("Log entry added successfully")
 
 @cli.command(help = 'adminOnly add new superuser')
 @click.option('--address', help='New admin address')
@@ -322,7 +345,7 @@ def logout( ):
 
 
 
-@cli.command(help='AdminOnly get another user logs')
+@cli.command(help='Admin OR SUPERUSER Only get another user logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def get_user_logs(user_address, output_file):
@@ -388,6 +411,27 @@ def view_my_logs(output_file):
 
 
 
+@cli.command(help= 'view public logs')
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
+def view_public_logs(output_file):
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    my_logs = contract.functions.getPublicLogs().call({'from': wallet_address})
+    
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write("Public Logs:\n")
+            for my_log in my_logs:
+                f.write(str(my_log) + '\n')
+        print(f"Your logs saved to {output_file}")
+    else:
+        print("PUBLIC Logs:")
+        for my_log in my_logs:
+            print(my_log)
+
+
+
+
 @cli.command(help = 'see admin addres')
 def adminAddres():
     
@@ -398,7 +442,7 @@ def adminAddres():
 
 
 
-@cli.command(help = 'see admin addres')
+@cli.command(help = 'see superuser addres')
 def superuserAddres():
 
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
