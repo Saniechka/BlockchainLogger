@@ -93,7 +93,7 @@ contract Auth {
 }
 
 
-function isUserLoggedIn(address _userAddress) public view  returns (bool) {
+function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  returns (bool) {
     UserDetail memory user = users[_userAddress];
     require(bytes(user.name).length > 0, "User is not registered");
     return user.isUserLoggedIn;
@@ -127,8 +127,10 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     return true;
 }
 
+
+
+
     function changeUserPassword(address _userAddress, string memory _newPassword) public onlyUser onlyAdmin {
-        require(_userAddress == msg.sender, "Only the user can change their password");
         users[_userAddress].password = _newPassword;
         emit UserPasswordChanged(_userAddress, _newPassword);
     }
@@ -171,7 +173,7 @@ function isUserLoggedIn(address _userAddress) public view  returns (bool) {
     }
 
 
-    function addPublicLog(string memory _logData) public onlyAdminOrSuperuser {
+    function addPublicLog(string memory _logData) public  onlyUser  onlyAdminOrSuperuser {
     publicLogs.push(LogEntry({
         logData: _logData
     }));

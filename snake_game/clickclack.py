@@ -43,6 +43,25 @@ def get_contract_and_credentials():
 
     return contract, wallet_address, private_key,chain_id,web3
 
+def execute_transaction(contract, function_name, args, chain_id, wallet_address, private_key, web3):
+    # Budowanie transakcji w zależności od funkcji
+    transaction = getattr(contract.functions, function_name)(*args).build_transaction({
+        'chainId': chain_id,
+        'gas': 1000000,
+        'gasPrice': web3.to_wei('5', 'gwei'),
+        'nonce': web3.eth.get_transaction_count(wallet_address),
+    })
+
+    # Podpisanie transakcji
+    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+    # Wysłanie transakcji
+    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+    # Poczekanie na potwierdzenie transakcji
+    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+
+    return receipt
 
 # init change?
 @cli.command(help='Initialization')
@@ -62,7 +81,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0x6551db43f0f854A5101E89162d2cC151285630e7'
+    contract_address = '0x9dE15036DF84FdF8ad19E5ba0fb4aE62E4a41F98'
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -87,24 +106,21 @@ def register_user(address, login, password):
 
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
+    transaction_data = {
+        'address': address,
+        'login': login,
+        'password': password
+    }
 
+# Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'registerUser', [address, login, password], chain_id, wallet_address, private_key, web3   
+    )
 
-    transaction = contract.functions.registerUser(
-        address, login, password
-    ).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
-
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
-    if receipt.status == 1 :
-        print('OK')
+    if receipt.status == 1:
+        print('User registered success')
+
 
 #problem
 @cli.command(help = 'ADMINONLY get user profile')
@@ -137,62 +153,48 @@ def getUserDetails( address):
 
 def set_Admin(address):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
 
-    transaction = contract.functions.setAdmin(address).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
+    
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'setAdmin', [address], chain_id, wallet_address, private_key, web3
+    )
 
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
-    print("ok")
+    if receipt.status == 1:
+        print('OK')
+     
 
 
 @cli.command(help='Add log entry for a user')
 @click.option('--log_data', help='Log data to add')
 def add_log( log_data):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
+
    
-    transaction = contract.functions.addLog(log_data).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'addLog', [log_data], chain_id, wallet_address, private_key, web3
+    )
 
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
     if receipt.status == 1:
-        print("Log entry added successfully")
-
+        print('Log entry added succesfully')
+     
+   
 
 @cli.command(help=' ONLYADMIN OR SUPERUSER Add piblic log entry' )
 @click.option('--log_data', help='Log data to add')
 def add_public_log( log_data):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
-   
-    transaction = contract.functions.addPublicLog(log_data).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'addPublicLog', [log_data], chain_id, wallet_address, private_key, web3
+    )
 
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
     if receipt.status == 1:
         print("Log entry added successfully")
@@ -202,21 +204,15 @@ def add_public_log( log_data):
 
 def set_SuperUser(address):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
 
-    transaction = contract.functions.setSuperuser(address).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'setSuperuser', [address], chain_id, wallet_address, private_key, web3
+    )
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
-    print("ok")
+    if receipt.status == 1:
+        print('OK')
 
 
 
@@ -226,24 +222,17 @@ def set_SuperUser(address):
 
 def change_user_password( address, new_password):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
 
-    transaction = contract.functions.changeUserPassword(
-        address, new_password
-    ).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'changeUserPassword', [address, new_password], chain_id, wallet_address, private_key, web3
+    )
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
-    if receipt.status ==1:
-        print('OK')
+    if receipt.status == 1:
+        print('Password changed')
+
+
 
 
 @cli.command(help='adminOnly change another user name')
@@ -251,49 +240,38 @@ def change_user_password( address, new_password):
 @click.option('--new_name', help='New user name')
 def change_user_name(address, new_name):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
 
-    transaction = contract.functions.changeUserName(
-        address, new_name
-    ).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
+   
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'changeUserName', [address, new_name], chain_id, wallet_address, private_key, web3
+    )
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
-    if  receipt.status == 1: 
-        print('OK')
-
+    if receipt.status == 1:
+        print('Name changed')
+   
 
 @cli.command(help = 'change password')
 @click.option('--new_password', help='New password')
 
 def change_my_password(new_password):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
 
-    transaction = contract.functions.changeMyPassword(
-        new_password
-    ).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
 
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+
+
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'changeMyPassword', [new_password], chain_id, wallet_address, private_key, web3
+    )
+
     print(receipt)
     if receipt.status == 1:
-        print("password changing succes")
+        print('Password changing success')
+     
+
 
 
 @cli.command(help = 'comand for logging')
@@ -303,46 +281,23 @@ def login(login, password):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
      
 
-    transaction = contract.functions.login(
-         login, password
-    ).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
+    receipt = execute_transaction(
+        contract, 'login', [login, password], chain_id, wallet_address, private_key, web3
+    )
 
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
     print(receipt)
     if receipt.status == 1:
-        print("loging succes")
-
+        print("login success")
 
 @cli.command(help ='log out')
 def logout( ):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
 
-    transaction = contract.functions.logoutUser(
-         
-    ).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
-
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+    receipt = execute_transaction(contract, 'logoutUser', [], chain_id, wallet_address, private_key, web3)
     print(receipt)
+
     if receipt.status == 1:
         print("logout succes")
-
 
 
 @cli.command(help='Admin OR SUPERUSER Only get another user logs')
