@@ -1,277 +1,456 @@
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12 <0.9.0;
+import click
+import json
+from web3 import Web3
+from hexbytes import HexBytes
+
+@click.group()
+@click.pass_context
+def cli(ctx):
+    pass
 
 
-contract Auth {
-
-    address public adminAddress;
-    address public superuserAddress;
-
-    enum UserRole { Admin, Superuser, User }
-
-    struct UserDetail {
-    string name;
-    string password;
-    bool isUserLoggedIn;
-    UserRole role;
-    bool isSuperuser; 
-}
+#can be only 1 admin
+#loginadmin
 
 
-    struct DocInfo { 
-        string ipfsHash; 
-        string fileName; 
-        string fileType; 
-        uint dateAdded; 
-        bool exist;  
-    }
+#help function
+def load_config():
+    try:
+        with open('config.json', 'r') as file:
+            config_data = json.load(file)
+        return config_data
+    except FileNotFoundError:
+        print("config file problem")
+        return None
 
-    mapping (string => DocInfo) collection; 
-    mapping(address => UserDetail) public users;
-    address[] public userList;
+#help function
+def get_contract_and_credentials():
+    with open('contract_abi.json', 'r') as file:
+        contract_abi = json.load(file)
+    config_data = load_config()
+    if config_data is None:
+        return None, None, None, None
+
+    wallet_address = config_data['wallet_address']
+    private_key = config_data['private_key']
+    chain_id = config_data['chain_id']
+    contract_address = config_data['contract_address']
+    sepolia_rpc_url= config_data['sepolia_rpc_url']
+
+    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
+    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+     
+
+    return contract, wallet_address, private_key,chain_id,web3
+
+def execute_transaction(contract, function_name, args, chain_id, wallet_address, private_key, web3):
+    # Budowanie transakcji w zależności od funkcji
+    transaction = getattr(contract.functions, function_name)(*args).build_transaction({
+        'chainId': chain_id,
+        'gas': 1000000,
+        'gasPrice': web3.to_wei('5', 'gwei'),
+        'nonce': web3.eth.get_transaction_count(wallet_address),
+    })
+
+    # Podpisanie transakcji
+    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+    # Wysłanie transakcji
+    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+    # Poczekanie na potwierdzenie transakcji
+    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+
+    return receipt
+
+# init change?
+@cli.command(help='Initialization')
+@click.option('--wallet_address', help='Your wallet address ')
+@click.option('--private_key', help='Your private key.')
+
+def init(wallet_address, private_key): 
+    if not wallet_address or not private_key:
+        print("Error: Please provide both wallet address and private key.")
+        return
     
 
-    struct LogEntry {
-        string logData;
+    sepolia_rpc_url = "https://sepolia.base.org"
+    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
+    print(f"Is connected: {web3.is_connected()}")  # Is connected: True
+    with open('contract_abi.json', 'r') as file:
+        contract_abi = json.load(file)
+
+    chain_id = web3.eth.chain_id
+    contract_address = '0x9dE15036DF84FdF8ad19E5ba0fb4aE62E4a41F98'
+    
+    contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
+    print(contract)
+    config_data = {
+        'wallet_address': wallet_address,
+        'private_key': private_key,
+        'chain_id': chain_id,
+        'contract_address': contract_address,
+        'sepolia_rpc_url' : "https://sepolia.base.org"
+    }
+    with open('config.json', 'w') as file:
+        json.dump(config_data, file)
+
+
+
+@cli.command(help= 'adminOnly register new user')
+@click.option('--address', help='New user address')
+@click.option('--login', help='New user login')
+@click.option('--password', help='New user password')
+
+def register_user(address, login, password):
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+    transaction_data = {
+        'address': address,
+        'login': login,
+        'password': password
     }
 
-    mapping(address => LogEntry[]) public logs;
-    LogEntry[] public publicLogs;
+# Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'registerUser', [address, login, password], chain_id, wallet_address, private_key, web3   
+    )
 
-    mapping(address => LogEntry[]) public userCompanyLogs;
-    mapping(address => LogEntry[]) public userEncryptedLogs;
-    mapping(address => LogEntry[]) public userCompanyEncryptedLogs;
-
-    event UserRegistered(address indexed userAddress, string name, bool isUserLoggedIn);
-    event UserPasswordChanged(address indexed userAddress, string newPassword);
-    event UserNameChanged(address indexed userAddress, string newName);
-    event UserLoggedIn(address indexed userAddress);
-    event UserLoggedOut(address indexed userAddress);
-    event LogAdded(address indexed userAddress, string logData);
-    event HashAdded(string ipfsHash, string fileHash, uint dateAdded);
-
-    constructor() {
-        adminAddress = msg.sender;
-        superuserAddress = address(0); 
-        registerUser(msg.sender, "admin", "admin");
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == adminAddress, "Only admin can call this function");
-        _;
-    }
-
-    modifier onlyAdminOrSuperuser() {
-        require(msg.sender == adminAddress || msg.sender == superuserAddress, "Only admin or superuser can call this function");
-        _;
-    }
-
-     modifier onlyUser() {
-    require(bytes(users[msg.sender].name).length > 0, "Only registered users can call this function");
-    require(users[msg.sender].isUserLoggedIn, "User must be logged in");
-    _;
-}
+    print(receipt)
+    if receipt.status == 1:
+        print('User registered success')
 
 
-    function getUserDetails(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
-        UserDetail memory user = users[_userAddress];
-        string memory userDetails = string(abi.encodePacked(user.name, ",", user.password, ",", user.isUserLoggedIn ? "true" : "false", ",", userRoleToString(user.role)));
-        return userDetails;
-    }
+#problem
+@cli.command(help = 'ADMINONLY get user profile')
+@click.option('--address', help='User address')
+def getUserDetails( address):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    
+    result1 = contract.functions.getUserDetails(address).call({'from': wallet_address})
+    
 
 
-function add(string memory _ipfsHash, string memory _fileHash, string memory _fileName, string memory _fileType, uint _dateAdded) public onlyAdminOrSuperuser { 
-        require(collection[_fileHash].exist == false, "[E1] This hash already exists in contract."); 
-        DocInfo memory docInfo = DocInfo(_ipfsHash, _fileName, _fileType, _dateAdded, true); 
-        collection[_fileHash] = docInfo; 
+    result = result1.split(",")
+    
+    name = result[0]
+    password = result[1]
+    is_logged_in = result[2]
+    role = result[3]
 
-        emit HashAdded(_ipfsHash, _fileHash, _dateAdded); 
-    } 
 
-    function get(string memory _fileHash) public view returns (string memory, string memory, string memory, string memory, uint, bool) { 
-        return ( 
-            _fileHash,  
-            collection[_fileHash].ipfsHash, 
-            collection[_fileHash].fileName, 
-            collection[_fileHash].fileType, 
-            collection[_fileHash].dateAdded, 
-            collection[_fileHash].exist 
-        ); 
-    } 
+    print("Name:", name)
+    print("Password:", password)
+    print("Is Logged In:", is_logged_in)
+    print("Role:", role)
+   
+    
+
+
+@cli.command(help = 'adminOnly add new admin')
+@click.option('--address', help='New admin address')
+
+def set_Admin(address):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+
+    
+
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'setAdmin', [address], chain_id, wallet_address, private_key, web3
+    )
+
+    print(receipt)
+    if receipt.status == 1:
+        print('OK')
+     
+
+
+@cli.command(help='Add log entry for a user')
+@click.option('--log_data', help='Log data to add')
+def add_log( log_data):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
    
 
-    function userRoleToString(UserRole role) private pure returns (string memory) {
-        if (role == UserRole.Admin) {
-            return "Admin";
-        } else if (role == UserRole.Superuser) {
-            return "Superuser";
-        } else {
-            return "User";
-        }
-    }
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'addLog', [log_data], chain_id, wallet_address, private_key, web3
+    )
 
+    print(receipt)
+    if receipt.status == 1:
+        print('Log entry added succesfully')
+     
+   
+## test it
+@cli.command(help='Add company log entry for a user Admin or superuserOnly')
+@click.option('--user_address', help='User address')
+@click.option('--log_data', help='Log data to add')
+def add_company_log(user_address, log_data):
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
 
-//userrole
-    function checkUserRole(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
-    UserDetail memory user = users[_userAddress];
-    require(bytes(user.name).length > 0, "User is not registered");
-    if (_userAddress == adminAddress) {
-        return "Admin";
-    } else if (_userAddress == superuserAddress) {
-        return "Superuser";
-    } else if (user.isSuperuser) {
-        return "Superuser";
-    } else {
-        return "User";
-    }
-}
+    #
+    receipt = execute_transaction(
+        contract, 'addCompanyLog', [user_address, log_data], chain_id, wallet_address, private_key, web3
+    )
 
+    if receipt.status == 1:
+        print('Company log entry added successfully')
 
-function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  returns (bool) {
-    UserDetail memory user = users[_userAddress];
-    require(bytes(user.name).length > 0, "User is not registered");
-    return user.isUserLoggedIn;
-}
+## test it
+@cli.command(help='Get company logs of the current user')
+def get_my_company_logs():
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
 
+    # Wywołanie funkcji widoku
+    logs = contract.functions.getMyCompanyLogs().call({'from': wallet_address})
 
+    print("My Company Logs:")
+    for log in logs:
+        print(log)
 
-    function setSuperuser(address _superuserAddress) public onlyUser onlyAdmin {
-        superuserAddress = _superuserAddress;
-    }
+@cli.command(help=' ONLYADMIN OR SUPERUSER Add piblic log entry' )
+@click.option('--log_data', help='Log data to add')
+def add_public_log( log_data):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
-    function setAdmin(address _adminAddress) public onlyUser onlyAdmin {
-        adminAddress = _adminAddress;
-    }
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'addPublicLog', [log_data], chain_id, wallet_address, private_key, web3
+    )
 
-    function registerUser(
-    address _userAddress,
-    string memory _name,
-    string memory _password
-) public onlyAdmin returns (bool) {
-    require(bytes(users[_userAddress].name).length == 0, "User already registered");
-    users[_userAddress].name = _name;
-    users[_userAddress].password = _password;
-    users[_userAddress].isUserLoggedIn = false;
-    users[_userAddress].role = UserRole.User; 
-    users[_userAddress].isSuperuser = false; 
-    userList.push(_userAddress);
-    emit UserRegistered(_userAddress, _name, false);
-    return true;
-}
+    print(receipt)
+    if receipt.status == 1:
+        print("Log entry added successfully")
 
+@cli.command(help = 'adminOnly add new superuser')
+@click.option('--address', help='New admin address')
 
-    function changeUserPassword(address _userAddress, string memory _newPassword) public onlyUser onlyAdmin {
-        users[_userAddress].password = _newPassword;
-        emit UserPasswordChanged(_userAddress, _newPassword);
-    }
+def set_SuperUser(address):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
-    function changeUserName(address _userAddress, string memory _newName) public onlyUser onlyAdmin {
-        
-        users[_userAddress].name = _newName;
-        emit UserNameChanged(_userAddress, _newName);
-    }
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'setSuperuser', [address], chain_id, wallet_address, private_key, web3
+    )
+
+    print(receipt)
+    if receipt.status == 1:
+        print('OK')
 
 
 
-    function changeMyPassword(string memory _newPassword) public onlyUser {
-    
-    users[msg.sender].password = _newPassword;
-    emit UserPasswordChanged(msg.sender, _newPassword);
-}
+@cli.command(help= 'adminOnly change another user password')
+@click.option('--address', help='User address')
+@click.option('--new_password', help='New password')
 
+def change_user_password( address, new_password):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'changeUserPassword', [address, new_password], chain_id, wallet_address, private_key, web3
+    )
+
+    print(receipt)
+    if receipt.status == 1:
+        print('Password changed')
+
+
+
+
+@cli.command(help='adminOnly change another user name')
+@click.option('--address', help='User address')
+@click.option('--new_name', help='New user name')
+def change_user_name(address, new_name):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
    
-//login
-   function login(string memory _name, string memory _password) public returns (bool) {
-    require(bytes(users[msg.sender].name).length > 0, "User is not registered");
-    require(keccak256(abi.encodePacked(users[msg.sender].name)) == keccak256(abi.encodePacked(_name)), "Invalid name");
-    require(keccak256(bytes(users[msg.sender].password)) == keccak256(bytes(_password)), "Invalid password");
-    users[msg.sender].isUserLoggedIn = true;
-    emit UserLoggedIn(msg.sender);
-    return true;
-}
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'changeUserName', [address, new_name], chain_id, wallet_address, private_key, web3
+    )
 
-    function logoutUser() public onlyUser {
-        users[msg.sender].isUserLoggedIn = false;
-        emit UserLoggedOut(msg.sender);
-    }
+    print(receipt)
+    if receipt.status == 1:
+        print('Name changed')
+   
 
-    function addLog(string memory _logData) public onlyUser {
-        logs[msg.sender].push(LogEntry({
-            logData: _logData
-        }));
-    }
-//add log to user only superuser or admin can do it
-  function addCompanyLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
-         userCompanyLogs[_userAddress].push(LogEntry({
-            logData: _logData
-        }));
-        emit LogAdded(_userAddress, _logData);
-    }   
+@cli.command(help = 'change password')
+@click.option('--new_password', help='New password')
 
-function getMyCompanyLogs() public view onlyUser returns (LogEntry[] memory) {
-        return userCompanyLogs[msg.sender];
-      }
+def change_my_password(new_password):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
 
-//add log to user only superuser or admin can do it
-  function addCompanyEncryptedLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
-         userCompanyEncryptedLogs[_userAddress].push(LogEntry({
-            logData: _logData
-        }));
-        emit LogAdded(_userAddress, _logData);
-    }   
-
-function getMyCompanyEncryptedLogs() public view onlyUser returns (LogEntry[] memory) {
-        return userCompanyEncryptedLogs[msg.sender];
-      }
 
 
-//add log to user only superuser or admin can do it
-  function addEncryptedLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
-         userEncryptedLogs[_userAddress].push(LogEntry({
-            logData: _logData
-        }));
-        emit LogAdded(_userAddress, _logData);   // czy to dobrze nie wiem
-    }   
 
-function getMyEncryptedLogs() public view onlyUser returns (LogEntry[] memory) {
-        return userEncryptedLogs[msg.sender];
-      }
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'changeMyPassword', [new_password], chain_id, wallet_address, private_key, web3
+    )
 
-    function addPublicLog(string memory _logData) public  onlyUser  onlyAdminOrSuperuser {
-    publicLogs.push(LogEntry({
-        logData: _logData
-    }));
-}
+    print(receipt)
+    if receipt.status == 1:
+        print('Password changing success')
+     
 
 
-    function getPublicLogs() public view  returns (LogEntry[] memory) {
-        return publicLogs;
-    }
-//getanotheruser logs
-    function getUserLogs(address _userAddress) public view onlyUser onlyAdminOrSuperuser returns (LogEntry[] memory) {
-        return logs[_userAddress];
-    }
 
+@cli.command(help = 'comand for logging')
+@click.option('--login', help='User login')
+@click.option('--password', help='User password')
+def login(login, password):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+
+    receipt = execute_transaction(
+        contract, 'login', [login, password], chain_id, wallet_address, private_key, web3
+    )
+
+    print(receipt)
+    if receipt.status == 1:
+        print("login success")
+
+@cli.command(help ='log out')
+def logout( ):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+
+    receipt = execute_transaction(contract, 'logoutUser', [], chain_id, wallet_address, private_key, web3)
+    print(receipt)
+
+    if receipt.status == 1:
+        print("logout succes")
+
+
+@cli.command(help='Admin OR SUPERUSER Only get another user logs')
+@click.option('--user_address', help='User address')
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
+def get_user_logs(user_address, output_file):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+    user_logs = contract.functions.getUserLogs(user_address).call({'from': wallet_address})
     
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write("User Logs:\n")
+            for user_log in user_logs:
+                f.write(str(user_log) + '\n')
+        print(f"User logs saved to {output_file}")
+    else:
+        print("User Logs:")
+        for user_log in user_logs:
+            print(user_log)
 
-    function getAllUsers() public view onlyUser onlyAdmin returns (address[] memory) {
-        return userList;
-    }
 
-    function viewMyLogs() public view onlyUser returns (LogEntry[] memory) {
-    return logs[msg.sender];
-}
-//see my userrole
-    function viewMyRole() public view onlyUser returns (string memory) {
-        if (msg.sender == adminAddress) {
-            return "Admin";
-        } else if (msg.sender == superuserAddress) {
-            return "Superuser";
-        } else {
-            return "User";
-        }
-    }
-}
+
+@cli.command(help= 'onlyAdmin get list of all users')
+def get_all_users():
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+    users = contract.functions.getAllUsers().call({'from': wallet_address})
+
+    print("List of all users:")
+    for user_address in users:
+        print(user_address)
+
+
+
+@cli.command(help= 'See my status')
+def view_my_role( ):
+    
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+    user_status = contract.functions.viewMyRole().call({'from': wallet_address})
+    
+    print(user_status)
+
+
+
+
+@cli.command(help= 'view my logs')
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
+def view_my_logs(output_file):
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    my_logs = contract.functions.viewMyLogs().call({'from': wallet_address})
+    
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write("My Logs:\n")
+            for my_log in my_logs:
+                f.write(str(my_log) + '\n')
+        print(f"Your logs saved to {output_file}")
+    else:
+        print("My Logs:")
+        for my_log in my_logs:
+            print(my_log)
+
+
+
+@cli.command(help= 'view public logs')
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
+def view_public_logs(output_file):
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    my_logs = contract.functions.getPublicLogs().call({'from': wallet_address})
+    
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write("Public Logs:\n")
+            for my_log in my_logs:
+                f.write(str(my_log) + '\n')
+        print(f"Your logs saved to {output_file}")
+    else:
+        print("PUBLIC Logs:")
+        for my_log in my_logs:
+            print(my_log)
+
+
+
+
+@cli.command(help = 'see admin addres')
+def adminAddres():
+    
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    admin_address = contract.functions.adminAddress().call({'from': wallet_address})
+
+    print("AdminAddres:", admin_address)
+
+
+
+@cli.command(help = 'see superuser addres')
+def superuserAddres():
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+    superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
+
+    print("superuserAddres:", admin_address)
+
+
+
+@cli.command(help= 'adminOnly check user role')
+@click.option('--address', help='User address')
+def check_User_Role(address):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    address = Web3.to_checksum_address(address)
+    user_status = contract.functions.checkUserRole(address).call({'from': wallet_address})
+
+    print("User status:", user_status)
+
+@cli.command(help= 'check if user logged')
+@click.option('--address', help='User address')
+def is_User_Logged_In( address):
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    is_logged_in = contract.functions.isUserLoggedIn(address).call({'from': wallet_address})
+    
+    print("Is user logged in:", is_logged_in)
+
+if __name__ == '__main__':
+    cli()

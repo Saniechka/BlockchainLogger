@@ -39,6 +39,8 @@ contract Auth {
     LogEntry[] public publicLogs;
 
     mapping(address => LogEntry[]) public userCompanyLogs;
+    mapping(address => LogEntry[]) public userEncryptedLogs;
+    mapping(address => LogEntry[]) public userCompanyEncryptedLogs;
 
     event UserRegistered(address indexed userAddress, string name, bool isUserLoggedIn);
     event UserPasswordChanged(address indexed userAddress, string newPassword);
@@ -78,7 +80,7 @@ contract Auth {
     }
 
 
-function add(string memory _ipfsHash, string memory _fileHash, string memory _fileName, string memory _fileType, uint _dateAdded) public onlyOwner { 
+function add(string memory _ipfsHash, string memory _fileHash, string memory _fileName, string memory _fileType, uint _dateAdded) public onlyAdminOrSuperuser { 
         require(collection[_fileHash].exist == false, "[E1] This hash already exists in contract."); 
         DocInfo memory docInfo = DocInfo(_ipfsHash, _fileName, _fileType, _dateAdded, true); 
         collection[_fileHash] = docInfo; 
@@ -134,8 +136,6 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
 
 
 
-  
-
     function setSuperuser(address _superuserAddress) public onlyUser onlyAdmin {
         superuserAddress = _superuserAddress;
     }
@@ -159,8 +159,6 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
     emit UserRegistered(_userAddress, _name, false);
     return true;
 }
-
-
 
 
     function changeUserPassword(address _userAddress, string memory _newPassword) public onlyUser onlyAdmin {
@@ -214,6 +212,32 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
 
 function getMyCompanyLogs() public view onlyUser returns (LogEntry[] memory) {
         return userCompanyLogs[msg.sender];
+      }
+
+
+//add log to user only superuser or admin can do it
+  function addCompanyEncryptedLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
+         userCompanyEncryptedLogs[_userAddress].push(LogEntry({
+            logData: _logData
+        }));
+        emit LogAdded(_userAddress, _logData);
+    }   
+
+function getMyCompanyEncryptedLogs() public view onlyUser returns (LogEntry[] memory) {
+        return userCompanyEncryptedLogs[msg.sender];
+      }
+
+
+//add log to user only superuser or admin can do it
+  function addEncryptedLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
+         userEncryptedLogs[_userAddress].push(LogEntry({
+            logData: _logData
+        }));
+        emit LogAdded(_userAddress, _logData);   // czy to dobrze nie wiem
+    }   
+
+function getMyEncryptedLogs() public view onlyUser returns (LogEntry[] memory) {
+        return userEncryptedLogs[msg.sender];
       }
 
     function addPublicLog(string memory _logData) public  onlyUser  onlyAdminOrSuperuser {
