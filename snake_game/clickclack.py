@@ -184,6 +184,32 @@ def add_log( log_data):
         print('Log entry added succesfully')
      
    
+## test it
+@cli.command(help='Add company log entry for a user Admin or superuserOnly')
+@click.option('--user_address', help='User address')
+@click.option('--log_data', help='Log data to add')
+def add_company_log(user_address, log_data):
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+
+    #
+    receipt = execute_transaction(
+        contract, 'addCompanyLog', [user_address, log_data], chain_id, wallet_address, private_key, web3
+    )
+
+    if receipt.status == 1:
+        print('Company log entry added successfully')
+
+## test it
+@cli.command(help='Get company logs of the current user')
+def get_my_company_logs():
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+
+    # Wywołanie funkcji widoku
+    logs = contract.functions.getMyCompanyLogs().call({'from': wallet_address})
+
+    print("My Company Logs:")
+    for log in logs:
+        print(log)
 
 @cli.command(help=' ONLYADMIN OR SUPERUSER Add piblic log entry' )
 @click.option('--log_data', help='Log data to add')
