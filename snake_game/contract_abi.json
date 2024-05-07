@@ -1,8 +1,47 @@
 [
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "ipfsHash",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "fileHash",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "dateAdded",
+				"type": "uint256"
+			}
+		],
+		"name": "HashAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "userAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "logData",
+				"type": "string"
+			}
+		],
+		"name": "LogAdded",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -96,12 +135,81 @@
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			},
+			{
 				"internalType": "string",
 				"name": "_logData",
 				"type": "string"
 			}
 		],
-		"name": "addLog",
+		"name": "addCompanyLog",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_logData",
+				"type": "string"
+			}
+		],
+		"name": "addEncryptedCompanyLog",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logData",
+				"type": "string"
+			}
+		],
+		"name": "addEncryptedUserLog",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_ipfsHash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_fileHash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_fileName",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_fileType",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_dateAdded",
+				"type": "uint256"
+			}
+		],
+		"name": "addFile",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -120,16 +228,16 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "adminAddress",
-		"outputs": [
+		"inputs": [
 			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
+				"internalType": "string",
+				"name": "_logData",
+				"type": "string"
 			}
 		],
-		"stateMutability": "view",
+		"name": "addUserLog",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -184,122 +292,6 @@
 	{
 		"inputs": [
 			{
-				"internalType": "address",
-				"name": "_userAddress",
-				"type": "address"
-			}
-		],
-		"name": "checkUserRole",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getAllUsers",
-		"outputs": [
-			{
-				"internalType": "address[]",
-				"name": "",
-				"type": "address[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getPublicLogs",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "string",
-						"name": "logData",
-						"type": "string"
-					}
-				],
-				"internalType": "struct Auth.LogEntry[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_userAddress",
-				"type": "address"
-			}
-		],
-		"name": "getUserDetails",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_userAddress",
-				"type": "address"
-			}
-		],
-		"name": "getUserLogs",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "string",
-						"name": "logData",
-						"type": "string"
-					}
-				],
-				"internalType": "struct Auth.LogEntry[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_userAddress",
-				"type": "address"
-			}
-		],
-		"name": "isUserLoggedIn",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "string",
 				"name": "_name",
 				"type": "string"
@@ -326,49 +318,6 @@
 		"name": "logoutUser",
 		"outputs": [],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "logs",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "logData",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "publicLogs",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "logData",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -424,6 +373,288 @@
 		"name": "setSuperuser",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "adminAddress",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "allLogs",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "logData",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isEncrypted",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isCompanyLog",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "checkUserRole",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_fileHash",
+				"type": "string"
+			}
+		],
+		"name": "getFile",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bool",
+				"name": "_isEncrypted",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "_isCompanyLog",
+				"type": "bool"
+			}
+		],
+		"name": "getMyLogs",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "string",
+						"name": "logData",
+						"type": "string"
+					},
+					{
+						"internalType": "bool",
+						"name": "isEncrypted",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "isCompanyLog",
+						"type": "bool"
+					}
+				],
+				"internalType": "struct Auth.LogEntry[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPublicLogs",
+		"outputs": [
+			{
+				"internalType": "string[]",
+				"name": "",
+				"type": "string[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "getUserDetails",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "_isEncrypted",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "_isCompanyLog",
+				"type": "bool"
+			}
+		],
+		"name": "getUserLogs",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "string",
+						"name": "logData",
+						"type": "string"
+					},
+					{
+						"internalType": "bool",
+						"name": "isEncrypted",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "isCompanyLog",
+						"type": "bool"
+					}
+				],
+				"internalType": "struct Auth.LogEntry[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "isUserLoggedIn",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "publicLogs",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "logData",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isEncrypted",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isCompanyLog",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -492,26 +723,6 @@
 				"internalType": "bool",
 				"name": "isSuperuser",
 				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "viewMyLogs",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "string",
-						"name": "logData",
-						"type": "string"
-					}
-				],
-				"internalType": "struct Auth.LogEntry[]",
-				"name": "",
-				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",

@@ -2,6 +2,9 @@ import click
 import json
 from web3 import Web3
 from hexbytes import HexBytes
+import time
+import requests
+import hashlib
 
 @click.group()
 @click.pass_context
@@ -63,6 +66,38 @@ def execute_transaction(contract, function_name, args, chain_id, wallet_address,
 
     return receipt
 
+
+
+def createHashes(path):
+    url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
+
+    
+    with open(path, "rb") as file:
+        file_data = file.read()
+
+    sha256_hash = hashlib.sha256(file_data).hexdigest()
+
+    
+    payload = {
+        "file": file_data
+    }
+
+    # poprawic w env dodac
+    headers = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJmODMyNmM0MC1iZDMxLTRjNDYtOGJmYy0xOGYzNTQzYzg4MGYiLCJlbWFpbCI6IjB4MmY0MzBjMWU3N2I5MTAxOWM3NmJkMjNkNmY2ZmZhOWY4MmFiMGE3MkBldGhlcm1haWwuaW8iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJpZCI6IkZSQTEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX0seyJpZCI6Ik5ZQzEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiYzk4MDRjMWMxZTUzN2ViYzQwMjgiLCJzY29wZWRLZXlTZWNyZXQiOiIxYzg0OGEzYWIyNDAxZDFhNWVhNjQyODcyMTVlZTRiNmMzNzFhMmQyYzhkNjcyNTk2OTI4MGE0MjY4M2I4YWQxIiwiaWF0IjoxNzE1MTA4ODY0fQ.QdWVuKQL-SOsEO8qL6oIB0XG3KnHhNNqnvcrfK_g1u0"
+    }
+
+    # Wyślij żądanie POST do Pinaty, aby przypiąć plik
+    response = requests.post(url, files=payload, headers=headers)
+
+    response_json = json.loads(response.text)
+
+
+    ipfsHash=response_json['IpfsHash']
+    return ipfsHash,sha256_hash
+
+
+
 # init change?
 @cli.command(help='Initialization')
 @click.option('--wallet_address', help='Your wallet address ')
@@ -120,6 +155,52 @@ def register_user(address, login, password):
     print(receipt)
     if receipt.status == 1:
         print('User registered success')
+
+
+
+@cli.command(help='add file data')
+@click.option('--filename', help='FILENAME')
+@click.option('--path', help='PATH')
+def add_file_data(filename, path):
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+    
+    # Check if filename and path are provided
+    if not filename or not path:
+        print("Error: Please provide both filename and path.")
+        return
+    
+    # Create hashes
+    ipfsHash, fileHash = createHashes(path)
+    
+    # Check if createHashes function returns valid hashes
+    if not ipfsHash or not fileHash:
+        print("Error: Failed to create hashes.")
+        return
+
+    # Get current time
+    dateAdded = int(time.time())
+
+    # Extract file extension for fileType
+    fileType = path.split('.')[-1]
+    print(sha)
+
+    try:
+        # Execute transaction
+        receipt = execute_transaction(
+            contract, 'addFile', [ipfsHash, fileHash, filename, fileType, dateAdded], chain_id, wallet_address, private_key, web3
+        )
+        
+        # Check if transaction was successful
+        if receipt.status == 1:
+            print('FILE ADDED SUCCESS')
+        else:
+            print('Error: File addition failed.')
+    except Exception as e:
+        print('Error:', e)
+
+
+
+
 
 
 #problem
@@ -431,6 +512,28 @@ def superuserAddres():
     superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
 
     print("superuserAddres:", admin_address)
+
+
+@cli.command(help='get file data by file hash')
+@click.option('--file_hash', help='File hash')
+def getFileData(file_hash):
+    if not file_hash:
+        print("Error: Please provide the file hash.")
+        return
+
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+     
+    file_data = contract.functions.getFile(file_hash).call({'from': wallet_address})
+
+    
+    print("File Hash:", file_data[0])
+    print("IPFS Hash:", file_data[1])
+    print("File Name:", file_data[2])
+    print("File Type:", file_data[3])
+    print("Date Added:", file_data[4])
+    print("Exist:", file_data[5])
+
+
 
 
 
