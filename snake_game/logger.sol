@@ -30,17 +30,17 @@ contract Auth {
     mapping(address => UserDetail) public users;
     address[] public userList;
     
+    
 
     struct LogEntry {
         string logData;
+        bool isEncrypted; // Informacja czy log jest zaszyfrowany
+        bool isCompanyLog; // Informacja czy log jest od firmy
     }
 
-    mapping(address => LogEntry[]) public logs;
+    
+    mapping(address => LogEntry[]) public allLogs;
     LogEntry[] public publicLogs;
-
-    mapping(address => LogEntry[]) public userCompanyLogs;
-    mapping(address => LogEntry[]) public userEncryptedLogs;
-    mapping(address => LogEntry[]) public userCompanyEncryptedLogs;
 
     event UserRegistered(address indexed userAddress, string name, bool isUserLoggedIn);
     event UserPasswordChanged(address indexed userAddress, string newPassword);
@@ -73,6 +73,65 @@ contract Auth {
 }
 
 
+// Funkcja dodająca logi
+    // Dodawanie logu firmy
+function addCompanyLog(address _userAddress, string memory _logData) public onlyAdminOrSuperuser {
+    allLogs[_userAddress].push(LogEntry({
+        logData: _logData,
+        isEncrypted: false,
+        isCompanyLog: true
+    }));
+}
+
+// Dodawanie zaszyfrowanego logu firmy
+function addEncryptedCompanyLog(address _userAddress, string memory _logData) public onlyAdminOrSuperuser {
+    allLogs[_userAddress].push(LogEntry({
+        logData: _logData,
+        isEncrypted: true,
+        isCompanyLog: true
+    }));
+}
+
+// Dodawanie zaszyfrowanego logu użytkownika
+function addEncryptedUserLog( string memory _logData) public onlyUser onlyAdminOrSuperuser {
+    allLogs[msg.sender].push(LogEntry({
+        logData: _logData,
+        isEncrypted: true,
+        isCompanyLog: false
+    }));
+}
+
+// Dodawanie zwykłego logu użytkownika
+function addUserLog( string memory _logData) public onlyUser {
+    allLogs[msg.sender].push(LogEntry({
+
+        logData: _logData,
+        isEncrypted: false,
+        isCompanyLog: false
+    }));
+}
+
+
+function addPublicLog(string memory _logData) public  onlyUser  onlyAdminOrSuperuser {
+    publicLogs.push(LogEntry({
+        logData: _logData,
+        isEncrypted: false,
+        isCompanyLog: false
+    }));
+}
+
+
+
+    function getPublicLogs() public view returns (string[] memory) {
+    uint256 logsCount = publicLogs.length;
+    string[] memory logStrings = new string[](logsCount);
+
+    for (uint256 i = 0; i < logsCount; i++) {
+        logStrings[i] = publicLogs[i].logData;
+    }
+
+    return logStrings;
+}
     function getUserDetails(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
         UserDetail memory user = users[_userAddress];
         string memory userDetails = string(abi.encodePacked(user.name, ",", user.password, ",", user.isUserLoggedIn ? "true" : "false", ",", userRoleToString(user.role)));
@@ -136,6 +195,8 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
 
 
 
+  
+
     function setSuperuser(address _superuserAddress) public onlyUser onlyAdmin {
         superuserAddress = _superuserAddress;
     }
@@ -159,6 +220,8 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
     emit UserRegistered(_userAddress, _name, false);
     return true;
 }
+
+
 
 
     function changeUserPassword(address _userAddress, string memory _newPassword) public onlyUser onlyAdmin {
@@ -197,73 +260,53 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
         emit UserLoggedOut(msg.sender);
     }
 
-    function addLog(string memory _logData) public onlyUser {
-        logs[msg.sender].push(LogEntry({
-            logData: _logData
-        }));
+
+
+
+   // Funkcja pobierająca określony rodzaj logów użytkownika
+function getUserLogs(address _userAddress, bool _isEncrypted, bool _isCompanyLog) public onlyAdminOrSuperuser view returns (LogEntry[] memory) {
+    LogEntry[] memory userLogs = allLogs[_userAddress];
+    LogEntry[] memory filteredLogs = new LogEntry[](userLogs.length);
+    uint256 filteredLogsCount = 0;
+
+    for (uint256 i = 0; i < userLogs.length; i++) {
+        if (userLogs[i].isEncrypted == _isEncrypted && userLogs[i].isCompanyLog == _isCompanyLog) {
+            filteredLogs[filteredLogsCount] = userLogs[i];
+            filteredLogsCount++;
+        }
     }
-//add log to user only superuser or admin can do it
-  function addCompanyLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
-         userCompanyLogs[_userAddress].push(LogEntry({
-            logData: _logData
-        }));
-        emit LogAdded(_userAddress, _logData);
-    }   
 
-function getMyCompanyLogs() public view onlyUser returns (LogEntry[] memory) {
-        return userCompanyLogs[msg.sender];
-      }
+    // Tworzenie nowej tablicy o odpowiedniej długości
+    LogEntry[] memory resultLogs = new LogEntry[](filteredLogsCount);
+    for (uint256 j = 0; j < filteredLogsCount; j++) {
+        resultLogs[j] = filteredLogs[j];
+    }
 
+    return resultLogs;
+}
 
-//add log to user only superuser or admin can do it
-  function addCompanyEncryptedLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
-         userCompanyEncryptedLogs[_userAddress].push(LogEntry({
-            logData: _logData
-        }));
-        emit LogAdded(_userAddress, _logData);
-    }   
+function getMyLogs(bool _isEncrypted, bool _isCompanyLog) public onlyUser view returns (LogEntry[] memory) {
+    LogEntry[] memory userLogs = allLogs[msg.sender];
+    LogEntry[] memory filteredLogs = new LogEntry[](userLogs.length);
+    uint256 filteredLogsCount = 0;
 
-function getMyCompanyEncryptedLogs() public view onlyUser returns (LogEntry[] memory) {
-        return userCompanyEncryptedLogs[msg.sender];
-      }
+    for (uint256 i = 0; i < userLogs.length; i++) {
+        if (userLogs[i].isEncrypted == _isEncrypted && userLogs[i].isCompanyLog == _isCompanyLog) {
+            filteredLogs[filteredLogsCount] = userLogs[i];
+            filteredLogsCount++;
+        }
+    }
 
+    // Tworzenie nowej tablicy o odpowiedniej długości
+    LogEntry[] memory resultLogs = new LogEntry[](filteredLogsCount);
+    for (uint256 j = 0; j < filteredLogsCount; j++) {
+        resultLogs[j] = filteredLogs[j];
+    }
 
-//add log to user only superuser or admin can do it
-  function addEncryptedLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
-         userEncryptedLogs[_userAddress].push(LogEntry({
-            logData: _logData
-        }));
-        emit LogAdded(_userAddress, _logData);   // czy to dobrze nie wiem
-    }   
-
-function getMyEncryptedLogs() public view onlyUser returns (LogEntry[] memory) {
-        return userEncryptedLogs[msg.sender];
-      }
-
-    function addPublicLog(string memory _logData) public  onlyUser  onlyAdminOrSuperuser {
-    publicLogs.push(LogEntry({
-        logData: _logData
-    }));
+    return resultLogs;
 }
 
 
-    function getPublicLogs() public view  returns (LogEntry[] memory) {
-        return publicLogs;
-    }
-//getanotheruser logs
-    function getUserLogs(address _userAddress) public view onlyUser onlyAdminOrSuperuser returns (LogEntry[] memory) {
-        return logs[_userAddress];
-    }
-
-    
-
-    function getAllUsers() public view onlyUser onlyAdmin returns (address[] memory) {
-        return userList;
-    }
-
-    function viewMyLogs() public view onlyUser returns (LogEntry[] memory) {
-    return logs[msg.sender];
-}
 //see my userrole
     function viewMyRole() public view onlyUser returns (string memory) {
         if (msg.sender == adminAddress) {
