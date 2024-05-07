@@ -3,7 +3,8 @@ pragma solidity >=0.6.12 <0.9.0;
 
 
 contract Auth {
-     address public adminAddress;
+
+    address public adminAddress;
     address public superuserAddress;
 
     enum UserRole { Admin, Superuser, User }
@@ -17,6 +18,15 @@ contract Auth {
 }
 
 
+    struct DocInfo { 
+        string ipfsHash; 
+        string fileName; 
+        string fileType; 
+        uint dateAdded; 
+        bool exist;  
+    }
+
+    mapping (string => DocInfo) collection; 
     mapping(address => UserDetail) public users;
     address[] public userList;
     
@@ -28,11 +38,15 @@ contract Auth {
     mapping(address => LogEntry[]) public logs;
     LogEntry[] public publicLogs;
 
+    mapping(address => LogEntry[]) public userCompanyLogs;
+
     event UserRegistered(address indexed userAddress, string name, bool isUserLoggedIn);
     event UserPasswordChanged(address indexed userAddress, string newPassword);
     event UserNameChanged(address indexed userAddress, string newName);
     event UserLoggedIn(address indexed userAddress);
     event UserLoggedOut(address indexed userAddress);
+    event LogAdded(address indexed userAddress, string logData);
+    event HashAdded(string ipfsHash, string fileHash, uint dateAdded);
 
     constructor() {
         adminAddress = msg.sender;
@@ -56,6 +70,7 @@ contract Auth {
     _;
 }
 
+
     function getUserDetails(address _userAddress) public view onlyUser onlyAdmin returns (string memory) {
         UserDetail memory user = users[_userAddress];
         string memory userDetails = string(abi.encodePacked(user.name, ",", user.password, ",", user.isUserLoggedIn ? "true" : "false", ",", userRoleToString(user.role)));
@@ -63,6 +78,24 @@ contract Auth {
     }
 
 
+function add(string memory _ipfsHash, string memory _fileHash, string memory _fileName, string memory _fileType, uint _dateAdded) public onlyOwner { 
+        require(collection[_fileHash].exist == false, "[E1] This hash already exists in contract."); 
+        DocInfo memory docInfo = DocInfo(_ipfsHash, _fileName, _fileType, _dateAdded, true); 
+        collection[_fileHash] = docInfo; 
+
+        emit HashAdded(_ipfsHash, _fileHash, _dateAdded); 
+    } 
+
+    function get(string memory _fileHash) public view returns (string memory, string memory, string memory, string memory, uint, bool) { 
+        return ( 
+            _fileHash,  
+            collection[_fileHash].ipfsHash, 
+            collection[_fileHash].fileName, 
+            collection[_fileHash].fileType, 
+            collection[_fileHash].dateAdded, 
+            collection[_fileHash].exist 
+        ); 
+    } 
 
    
 
@@ -171,7 +204,17 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
             logData: _logData
         }));
     }
+//add log to user only superuser or admin can do it
+  function addCompanyLog(address _userAddress,string memory _logData) public onlyUser onlyAdminOrSuperuser {
+         userCompanyLogs[_userAddress].push(LogEntry({
+            logData: _logData
+        }));
+        emit LogAdded(_userAddress, _logData);
+    }   
 
+function getMyCompanyLogs() public view onlyUser returns (LogEntry[] memory) {
+        return userCompanyLogs[msg.sender];
+      }
 
     function addPublicLog(string memory _logData) public  onlyUser  onlyAdminOrSuperuser {
     publicLogs.push(LogEntry({
