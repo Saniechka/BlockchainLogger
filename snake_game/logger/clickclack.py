@@ -6,12 +6,14 @@ import time
 import requests
 import hashlib
 from aes import  generateKey, aesDecrypt,aesEncrypt,getAESKey
-from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt
+from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt, save_private_key,save_public_key
 
 @click.group()
 @click.pass_context
 def cli(ctx):
     pass
+
+
 
 
 #can be only 1 admin
@@ -180,6 +182,11 @@ def init(wallet_address, private_key):
         json.dump(config_data, file)
 
 
+
+@cli.command(help= 'view user logs')
+def generate_rsa_keys():
+    pass
+    
 
 @cli.command(help= 'adminOnly register new user')
 @click.option('--address', help='New user address')

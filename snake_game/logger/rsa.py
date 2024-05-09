@@ -19,25 +19,24 @@ def generate_public_key(private_key):
 
 
 
-# Zapisywanie klucza prywatnego
-with open("private_key.pem", "wb") as private_key_file:
-    private_key_file.write(
-        private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
+def save_private_key(private_key, filename):
+    with open(filename, "wb") as private_key_file:
+        private_key_file.write(
+            private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            )
         )
-    )
 
-# Zapisywanie klucza publicznego
-with open("public_key.pem", "wb") as public_key_file:
-    public_key_file.write(
-        public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+def save_public_key(public_key, filename):
+    with open(filename, "wb") as public_key_file:
+        public_key_file.write(
+            public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
         )
-    )
-
 
 
 def get_private_key():
