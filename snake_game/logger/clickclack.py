@@ -581,12 +581,17 @@ def view_user_company_logs(output_file):
     view_user_logs_sk(user_address,output_file,False,True)
 
 
+
 @cli.command(help= 'view user  encrypted logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_user_encrypted_logs(output_file):
-    def view_my_company_logs(output_file):
-        view_user_logs_sk(user_address,output_file,True,False)
+        decrypted_logs=view_user_logs_sk(user_address,output_file,True,False)
+        
+        for encrypted_log in decrypted_logs:
+            encrypted_hex, nonce, tag =encrypted_log[0].split('.')
+            decrypted_data = aesDecrypt(encrypted_hex, getAESKey(user_address), nonce, tag)
+            print(decrypted_data)
 
     
 
@@ -595,7 +600,16 @@ def view_user_encrypted_logs(output_file):
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_user_encrypted_company_logs(output_file):
-    view_user_logs_sk(user_address,output_file,True,True)
+    encrypted_logs=view_user_logs_sk(user_address,output_file,True,True)
+    
+    
+    private_key = get_private_key(user_address)
+    for encrypted_log in encrypted_logs:
+        log = encrypted_log[0]
+        log_data_bytes = bytes.fromhex(log)
+        decrypted_log = rsaDecrypt(log_data_bytes, private_key)
+        print(decrypted_log)
+        
 
 #############################################################################
 
