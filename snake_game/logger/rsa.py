@@ -4,6 +4,16 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization
 
 
+
+
+def generate_keys_rsa():
+    private_key=generate_private_key()
+    generate_public_key(private_key)
+    save_private_key(private_key, 'private_key.pem')
+    save_public_key(public_key, 'public_key.pem')
+
+
+
 def generate_private_key():
 # Generowanie kluczy RSA
     private_key = rsa.generate_private_key(
@@ -46,12 +56,16 @@ def get_private_key():
             password=None,  # Tu wpisz hasło, jeśli klucz prywatny jest zabezpieczony
             backend=default_backend()
         )
+    return private_key
+
 def get_public_key():
     with open("public_key.pem", "rb") as public_key_file:
         public_key = serialization.load_pem_public_key(
             public_key_file.read(),
             backend=default_backend()
         )
+    return public_key
+
 
 
 def rsaDecrypt(ciphertext, private_key):
@@ -78,26 +92,3 @@ def rsaEncrypt(message, public_key):
     )
     return ciphertext
 
-
-
-# Lista wiadomości
-messages = [b"Hello, RSA!", b"This is a test message.", b"Another message."]
-
-# Kodowanie i odczytywanie wiadomości z listy
-for message in messages:
-    # Kodowanie wiadomości
-    ciphertext = public_key.encrypt(
-        message,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    print(ciphertext)
-
-   
-
-    print("Original message:", message.decode())
-    print("Decrypted message:", plaintext.decode())
-    print("-" * 20)

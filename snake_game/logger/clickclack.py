@@ -6,7 +6,7 @@ import time
 import requests
 import hashlib
 from aes import  generateKey, aesDecrypt,aesEncrypt,getAESKey
-from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt, save_private_key,save_public_key
+from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt, generate_keys_rsa
 
 @click.group()
 @click.pass_context
@@ -95,6 +95,7 @@ def view_my_logs_sk(output_file, encrypted, company):
             print(my_log)
 
 
+
 def view_user_logs_sk(address,output_file, encrypted, company):
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
     
@@ -165,7 +166,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0x9dE15036DF84FdF8ad19E5ba0fb4aE62E4a41F98'  #wpisac jako zmienna
+    contract_address = '0x97DFB9A46Cf5FB4624FCf2d1938c1e5542477272'  #wpisac jako zmienna
     key = generateKey()
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
@@ -176,7 +177,7 @@ def init(wallet_address, private_key):
         'chain_id': chain_id,
         'contract_address': contract_address,
         'sepolia_rpc_url' : "https://sepolia.base.org",
-        'AESkey': key
+        'AESkey': key.hex()
     }
     with open('config.json', 'w') as file:
         json.dump(config_data, file)
@@ -187,6 +188,13 @@ def init(wallet_address, private_key):
 def generate_rsa_keys():
     pass
     
+
+
+
+@cli.command(help= 'generate rsa keys')
+
+def generate_rsa_keys():
+    generate_keys_rsa()
 
 @cli.command(help= 'adminOnly register new user')
 @click.option('--address', help='New user address')
@@ -511,19 +519,17 @@ def view_my_company_logs(output_file):
     view_my_logs_sk(output_file,False,True)
 
 
-@cli.command(help= 'view my  encrypted logs')
-@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
+@cli.command(help='view my encrypted logs')
+@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs; view in terminal if not provided')
 def view_my_encrypted_logs(output_file):
+    decrypted_logs = view_my_logs_sk(output_file, True, False)
     
-        decrypted_logs=view_my_logs_sk(output_file,True,False)
-
-        for encrypted_log in decrypted_logs:
-            encrypted_hex, nonce, tag = encrypted_log.split(".")
-            encrypted_hex = bytes.fromhex(encrypted_hex)
-            nonce = bytes.fromhex(nonce)
-            tag = bytes.fromhex(tag)
-            decrypted_data = aesDecrypt(encrypted_hex, getAESKey(), nonce, tag)
-            print(decrypted_data.decode('utf-8'))
+    for encrypted_log in decrypted_logs:
+        print(encrypted_log[0])
+       
+        encrypted_hex, nonce, tag =encrypted_log[0].split('.')
+        decrypted_data = aesDecrypt(encrypted_hex, getAESKey(), nonce, tag)
+        print(decrypted_data)
 
     ##tutaj jeszcze zapisa do  pliku
 
@@ -531,11 +537,15 @@ def view_my_encrypted_logs(output_file):
 @cli.command(help= 'view my company logs')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_my_encrypted_company_logs(output_file):
-    decrypted_logs=view_my_logs_sk(output_file,True,True)
+    encrypted_logs=view_my_logs_sk(output_file,True,True)
     private_key = get_private_key()
-    for encrypted_log in decrypted_logs:
-        decrypted_log = rsaDecrypt(encrypted_log, private_key)
+
+    for encrypted_log in encrypted_logs:
+        log = encrypted_log[0]
+        log_data_bytes = bytes.fromhex(log)
+        decrypted_log = rsaDecrypt(log_data_bytes, private_key)
         print(decrypted_log)
+        
 
 #############################################################################
 #############################################################################
@@ -545,7 +555,7 @@ def view_my_encrypted_company_logs(output_file):
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_user_logs(output_file):
-    def view_my_company_logs(output_file):
+    def view_user_company_logs(output_file):
         view_user_logs_sk(user_address,output_file,False,False)
     
 
@@ -554,14 +564,14 @@ def view_user_logs(output_file):
 @cli.command(help= 'view user company logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_my_company_logs(output_file):
+def view_user_company_logs(output_file):
     view_user_logs_sk(user_address,output_file,False,True)
 
 
 @cli.command(help= 'view user  encrypted logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_my_encrypted_logs(output_file):
+def view_user_encrypted_logs(output_file):
     def view_my_company_logs(output_file):
         view_user_logs_sk(user_address,output_file,True,False)
 
@@ -571,7 +581,7 @@ def view_my_encrypted_logs(output_file):
 @cli.command(help= 'view user company  encrypted logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_my_encrypted_company_logs(output_file):
+def view_user_encrypted_company_logs(output_file):
     view_user_logs_sk(user_address,output_file,True,True)
 
 #############################################################################
@@ -598,29 +608,28 @@ def add_log( log_data):
     if receipt.status == 1:
         print('Log entry added succesfully')
 
-
 @cli.command(help='Add log encrypted entry ')
 @click.option('--log_data', help='Log data to add')
-def add_encrypted_log( log_data):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+def add_encrypted_log(log_data):
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
     key = getAESKey()
-    encrypted_hex, nonce, tag = aesEncrypt(log_data,key)
     
+    
+    log_data_bytes = log_data.encode()
+    
+    encrypted_hex, nonce, tag = aesEncrypt(log_data_bytes, key)
 
-
-    result = ".".join([encrypted_hex.hex(), nonce.hex(), tag.hex()])
-    log_data = result
-
-
-
-    # Wywołanie uniwersalnej metody execute_transaction
+    result = ".".join([encrypted_hex, nonce, tag])  
+    
     receipt = execute_transaction(
-        contract, 'addEncryptedLog', [log_data], chain_id, wallet_address, private_key, web3
+        contract, 'addEncryptedLog', [result], chain_id, wallet_address, private_key, web3
     )
 
     print(receipt)
     if receipt.status == 1:
-        print('Log entry added succesfully')
+        print(encrypted_hex)
+        print('Log entry added successfully')
+
      
    
 ## test it
@@ -645,15 +654,22 @@ def add_company_log(user_address, log_data):
 @click.option('--log_data', help='Log data to add')
 def add_encrypted_company_log(user_address, log_data):
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    public_key= get_public_key
-    log_data = rsaEncrypt(log_data,public_key)  ##tutaj dopisa metode i moe zadziala
-
+    public_key = get_public_key()
+    
+    
+    log_data_bytes = log_data.encode()
+    
+    log_data_encrypted = rsaEncrypt(log_data_bytes, public_key)
+    
+    
+    log_data_hex = log_data_encrypted.hex()
     
     receipt = execute_transaction(
-        contract, 'addEncryptedCompanyLog', [user_address, log_data], chain_id, wallet_address, private_key, web3
+        contract, 'addEncryptedCompanyLog', [user_address, log_data_hex], chain_id, wallet_address, private_key, web3
     )
 
     if receipt.status == 1:
+        print(log_data_hex)
         print('Company log entry added successfully')
 
 
@@ -673,8 +689,7 @@ def add_public_log( log_data):
     if receipt.status == 1:
         print("Log entry added successfully")
 
-@cli.command(help = 'adminOnly add new admin')
-@click.option('--address', help='New admin address')
+###new admin add code
 
 
 
