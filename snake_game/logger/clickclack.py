@@ -389,40 +389,6 @@ def change_user_name(address, new_name):
         print('Name changed')
 
 
-
-@cli.command(help='adminOnly change another user name')
-@click.option('--address', help='User address')
-@click.option('--log', help='log')
-def addCompanyEncryptedLog(address, log):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-
-   
-    # Wywołanie uniwersalnej metody execute_transaction
-    receipt = execute_transaction(
-        contract, 'addEncryptedCompanyLog', [address, log], chain_id, wallet_address, private_key, web3
-    )
-
-    print(receipt)
-    if receipt.status == 1:
-        print('Log added')
-
-
-@cli.command(help='adminOnly change another user name')
-@click.option('--log', help='log')
-def addEncryptedLog(log):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-
-   
-    # Wywołanie uniwersalnej metody execute_transaction
-    receipt = execute_transaction(
-        contract, 'addEncryptedLog', [address, log], chain_id, wallet_address, private_key, web3
-    )
-
-    print(receipt)
-    if receipt.status == 1:
-        print('Log added')
-   
-
 @cli.command(help = 'change password')
 @click.option('--new_password', help='New password')
 
