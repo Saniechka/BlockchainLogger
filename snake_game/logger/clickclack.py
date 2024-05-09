@@ -779,5 +779,28 @@ def is_User_Logged_In( address):
     
     print("Is user logged in:", is_logged_in)
 
+
+   
+
+
+@cli.command(help = 'adminOnly add new admin')
+@click.option('--address', help='New admin address')
+
+def set_Admin(address):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+
+    
+
+    # Wywołanie uniwersalnej metody execute_transaction
+    receipt = execute_transaction(
+        contract, 'setAdmin', [address], chain_id, wallet_address, private_key, web3
+    )
+
+    print(receipt)
+    if receipt.status == 1:
+        print('OK')
+
+
+        
 if __name__ == '__main__':
     cli()
