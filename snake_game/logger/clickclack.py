@@ -5,8 +5,9 @@ from hexbytes import HexBytes
 import time
 import requests
 import hashlib
+import os
 from aes import  generateKey, aesDecrypt,aesEncrypt,getAESKey
-from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt, generate_keys_rsa
+from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt, generate_keys_rsa, generate_all_keys
 
 @click.group()
 @click.pass_context
@@ -29,6 +30,15 @@ def load_config():
     except FileNotFoundError:
         print("config file problem")
         return None
+
+
+def my_wallet_address():
+    config_data = load_config()
+    if config_data is None:
+        return None
+
+    wallet_address = config_data.get('wallet_address')
+    return wallet_address
 
 #help function
 def get_contract_and_credentials():
@@ -154,6 +164,7 @@ def createHashes(path):
 @click.option('--private_key', help='Your private key.')
 
 def init(wallet_address, private_key): 
+    generate_all_keys(wallet_address)
     if not wallet_address or not private_key:
         print("Error: Please provide both wallet address and private key.")
         return
@@ -166,8 +177,7 @@ def init(wallet_address, private_key):
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0x97DFB9A46Cf5FB4624FCf2d1938c1e5542477272'  #wpisac jako zmienna
-    key = generateKey()
+    contract_address = '0xC0135b6575842091206CA17E5F089235B37F41Ef'  #wpisac jako zmienna
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -177,7 +187,7 @@ def init(wallet_address, private_key):
         'chain_id': chain_id,
         'contract_address': contract_address,
         'sepolia_rpc_url' : "https://sepolia.base.org",
-        'AESkey': key.hex()
+       
     }
     with open('config.json', 'w') as file:
         json.dump(config_data, file)
@@ -528,7 +538,7 @@ def view_my_encrypted_logs(output_file):
         print(encrypted_log[0])
        
         encrypted_hex, nonce, tag =encrypted_log[0].split('.')
-        decrypted_data = aesDecrypt(encrypted_hex, getAESKey(), nonce, tag)
+        decrypted_data = aesDecrypt(encrypted_hex, getAESKey(my_wallet_address()), nonce, tag)
         print(decrypted_data)
 
     ##tutaj jeszcze zapisa do  pliku
@@ -538,13 +548,16 @@ def view_my_encrypted_logs(output_file):
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_my_encrypted_company_logs(output_file):
     encrypted_logs=view_my_logs_sk(output_file,True,True)
-    private_key = get_private_key()
+    
+    private_key = get_private_key(my_wallet_address())
 
     for encrypted_log in encrypted_logs:
         log = encrypted_log[0]
         log_data_bytes = bytes.fromhex(log)
         decrypted_log = rsaDecrypt(log_data_bytes, private_key)
         print(decrypted_log)
+        
+        
         
 
 #############################################################################
@@ -612,7 +625,7 @@ def add_log( log_data):
 @click.option('--log_data', help='Log data to add')
 def add_encrypted_log(log_data):
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    key = getAESKey()
+    key = getAESKey(my_wallet_address())
     
     
     log_data_bytes = log_data.encode()
@@ -632,7 +645,6 @@ def add_encrypted_log(log_data):
 
      
    
-## test it
 @cli.command(help='Add company log entry for a user Admin or superuserOnly')
 @click.option('--user_address', help='User address')
 @click.option('--log_data', help='Log data to add')
@@ -654,7 +666,7 @@ def add_company_log(user_address, log_data):
 @click.option('--log_data', help='Log data to add')
 def add_encrypted_company_log(user_address, log_data):
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    public_key = get_public_key()
+    public_key = get_public_key(my_wallet_address())
     
     
     log_data_bytes = log_data.encode()
@@ -801,6 +813,6 @@ def set_Admin(address):
         print('OK')
 
 
-        
+
 if __name__ == '__main__':
     cli()

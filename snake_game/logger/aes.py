@@ -2,11 +2,22 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 import binascii
 import json
+import os
+def getAESKey(username):
+    # Tworzenie ścieżki do pliku klucza AES dla danego użytkownika
+    aes_key_file_path = os.path.join('keys', f"{username}_aes_key.txt")
 
-def getAESKey():
-    with open('config.json', 'r') as file:
-        config_data = json.load(file)
-    return config_data.get('AESkey', None)
+    # Sprawdzenie, czy plik z kluczem AES dla danego użytkownika istnieje
+    if not os.path.exists(aes_key_file_path):
+        print(f"Plik z kluczem AES dla użytkownika {username} nie istnieje.")
+        return None
+
+    # Wczytanie klucza AES z pliku
+    with open(aes_key_file_path, 'r') as file:
+        aes_key = file.read().strip()
+
+    return aes_key
+
 
 def generateKey():
     key = get_random_bytes(16)
@@ -33,18 +44,10 @@ def aesEncrypt(data, key):
     tag_str = tag.hex()
     
     return encrypted_hex_str, nonce_str, tag_str
-'''
-    # Generowanie klucza AES
-key = generateKey()
 
-# Wiadomość do zaszyfrowania
-message = b"Hello, AESk!"
 
-# Szyfrowanie wiadomości
-encrypted_hex, nonce, tag = aesEncrypt(message, key)
+def save_aes_key(aes_key, filename):
+    # Zapisywanie klucza AES do pliku w postaci szesnastkowej (hex)
+    with open(filename, "w") as aes_key_file:
+        aes_key_file.write(aes_key.hex())  # Konwersja bajtów na ciąg znaków szesnastkowych i zapisanie do pliku
 
-# Konwersja wartości do stringa i połączenie ich kropkami
-result_string = ".".join([encrypted_hex.hex(), nonce.hex(), tag.hex()])
-
-# Wydrukowanie wyniku
-print("Encrypted message:", result_string)'''
