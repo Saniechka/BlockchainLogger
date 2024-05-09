@@ -40,21 +40,19 @@ with open("public_key.pem", "wb") as public_key_file:
 
 
 
-
-# Wczytywanie klucza prywatnego z pliku
-with open("private_key.pem", "rb") as private_key_file:
-    private_key = serialization.load_pem_private_key(
-        private_key_file.read(),
-        password=None,  # Tu wpisz hasło, jeśli klucz prywatny jest zabezpieczony
-        backend=default_backend()
-    )
-
-# Wczytywanie klucza publicznego z pliku
-with open("public_key.pem", "rb") as public_key_file:
-    public_key = serialization.load_pem_public_key(
-        public_key_file.read(),
-        backend=default_backend()
-    )
+def get_private_key():
+    with open("private_key.pem", "rb") as private_key_file:
+        private_key = serialization.load_pem_private_key(
+            private_key_file.read(),
+            password=None,  # Tu wpisz hasło, jeśli klucz prywatny jest zabezpieczony
+            backend=default_backend()
+        )
+def get_public_key():
+    with open("public_key.pem", "rb") as public_key_file:
+        public_key = serialization.load_pem_public_key(
+            public_key_file.read(),
+            backend=default_backend()
+        )
 
 
 def rsaDecrypt(ciphertext, private_key):
@@ -81,7 +79,8 @@ def rsaEncrypt(message, public_key):
     )
     return ciphertext
 
-    
+
+
 # Lista wiadomości
 messages = [b"Hello, RSA!", b"This is a test message.", b"Another message."]
 

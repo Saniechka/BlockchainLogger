@@ -6,7 +6,7 @@ import time
 import requests
 import hashlib
 from aes import  generateKey, aesDecrypt,aesEncrypt,getAESKey
-from rsa import rsaEncrypt
+from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt
 
 @click.group()
 @click.pass_context
@@ -525,8 +525,9 @@ def view_my_encrypted_logs(output_file):
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_my_encrypted_company_logs(output_file):
     decrypted_logs=view_my_logs_sk(output_file,True,True)
+    private_key = get_private_key()
     for encrypted_log in decrypted_logs:
-        decrypted_log = rsaDecrypt(encrypted_aes_key, private_key)
+        decrypted_log = rsaDecrypt(encrypted_log, private_key)
         print(decrypted_log)
 
 #############################################################################
@@ -637,7 +638,8 @@ def add_company_log(user_address, log_data):
 @click.option('--log_data', help='Log data to add')
 def add_encrypted_company_log(user_address, log_data):
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    log_data = rsaEncrypt()  ##tutaj dopisa metode i moe zadziala
+    public_key= get_public_key
+    log_data = rsaEncrypt(log_data,public_key)  ##tutaj dopisa metode i moe zadziala
 
     
     receipt = execute_transaction(
