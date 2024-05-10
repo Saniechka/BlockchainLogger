@@ -1,0 +1,4 @@
+variable.json
+config.json
+*.txt
+keys/

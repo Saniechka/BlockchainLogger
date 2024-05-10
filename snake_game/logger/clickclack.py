@@ -6,159 +6,18 @@ import time
 import requests
 import hashlib
 import os
-from aes import  generateKey, aesDecrypt,aesEncrypt,getAESKey
-from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt, generate_keys_rsa, generate_all_keys
+from aes import aesDecrypt,aesEncrypt,getAESKey
+from rsa import rsaEncrypt, get_private_key, get_public_key, rsaDecrypt,  generate_all_keys
+from help import  load_config,my_wallet_address,get_contract_and_credentials,execute_transaction,view_my_logs_sk,view_user_logs_sk,createHashes,save_logs_to_file
+
 
 @click.group()
 @click.pass_context
 def cli(ctx):
     pass
 
-
-
-
-#can be only 1 admin
-#loginadmin
-
-############################################################################################
-#help function
-def load_config():
-    try:
-        with open('config.json', 'r') as file:
-            config_data = json.load(file)
-        return config_data
-    except FileNotFoundError:
-        print("config file problem")
-        return None
-
-
-def my_wallet_address():
-    config_data = load_config()
-    if config_data is None:
-        return None
-
-    wallet_address = config_data.get('wallet_address')
-    return wallet_address
-
-#help function
-def get_contract_and_credentials():
-    with open('contract_abi.json', 'r') as file:
-        contract_abi = json.load(file)
-    config_data = load_config()
-    if config_data is None:
-        return None, None, None, None
-
-    wallet_address = config_data['wallet_address']
-    private_key = config_data['private_key']
-    chain_id = config_data['chain_id']
-    contract_address = config_data['contract_address']
-    sepolia_rpc_url= config_data['sepolia_rpc_url']
-
-    web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url)) 
-    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
-     
-
-    return contract, wallet_address, private_key,chain_id,web3
-
-def execute_transaction(contract, function_name, args, chain_id, wallet_address, private_key, web3):
-    # Budowanie transakcji w zależności od funkcji
-    transaction = getattr(contract.functions, function_name)(*args).build_transaction({
-        'chainId': chain_id,
-        'gas': 1000000,
-        'gasPrice': web3.to_wei('5', 'gwei'),
-        'nonce': web3.eth.get_transaction_count(wallet_address),
-    })
-
-    # Podpisanie transakcji
-    signed_txn = web3.eth.account.sign_transaction(transaction, private_key=private_key)
-
-    # Wysłanie transakcji
-    tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-    # Poczekanie na potwierdzenie transakcji
-    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-
-    return receipt
-
-
-
-def view_my_logs_sk(output_file, encrypted, company):
-    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    
-   
-    my_logs = contract.functions.getMyLogs(encrypted, company).call({'from': wallet_address})
-
-    if encrypted :
-        return my_logs
-    
-    if output_file:
-        # Zapisz logi do pliku, jeśli podano parametr --file
-        with open(output_file, 'w') as f:
-            f.write("My Logs:\n")
-            for my_log in my_logs:
-                f.write(str(my_log) + '\n')
-        print(f"Your logs saved to {output_file}")
-    else:
-        # Wyświetl logi w terminalu
-        print("My Logs:")
-        for my_log in my_logs:
-            print(my_log)
-
-
-
-def view_user_logs_sk(address,output_file, encrypted, company):
-    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    
-   
-    my_logs = contract.functions.getUserLogs(address,encrypted, company).call({'from': wallet_address})
-
-    if encrypted :
-        return my_logs
-    
-    if output_file:
-        # Zapisz logi do pliku, jeśli podano parametr --file
-        with open(output_file, 'w') as f:
-            f.write("User Logs:\n")
-            for my_log in my_logs:
-                f.write(str(my_log) + '\n')
-        print(f"Your logs saved to {output_file}")
-    else:
-        # Wyświetl logi w terminalu
-        print("My Logs:")
-        for my_log in my_logs:
-            print(my_log)
-
-
-
-def createHashes(path):
-    url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
-
-    
-    with open(path, "rb") as file:
-        file_data = file.read()
-
-    sha256_hash = hashlib.sha256(file_data).hexdigest()
-
-    
-    payload = {
-        "file": file_data
-    }
-
-    # poprawic w env dodac
-    headers = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJmODMyNmM0MC1iZDMxLTRjNDYtOGJmYy0xOGYzNTQzYzg4MGYiLCJlbWFpbCI6IjB4MmY0MzBjMWU3N2I5MTAxOWM3NmJkMjNkNmY2ZmZhOWY4MmFiMGE3MkBldGhlcm1haWwuaW8iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJpZCI6IkZSQTEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX0seyJpZCI6Ik5ZQzEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiYzk4MDRjMWMxZTUzN2ViYzQwMjgiLCJzY29wZWRLZXlTZWNyZXQiOiIxYzg0OGEzYWIyNDAxZDFhNWVhNjQyODcyMTVlZTRiNmMzNzFhMmQyYzhkNjcyNTk2OTI4MGE0MjY4M2I4YWQxIiwiaWF0IjoxNzE1MTA4ODY0fQ.QdWVuKQL-SOsEO8qL6oIB0XG3KnHhNNqnvcrfK_g1u0"
-    }
-
-    # Wyślij żądanie POST do Pinaty, aby przypiąć plik
-    response = requests.post(url, files=payload, headers=headers)
-
-    response_json = json.loads(response.text)
-
-
-    ipfsHash=response_json['IpfsHash']
-    return ipfsHash,sha256_hash
-
-############################################################################################
+###############################
+# login auth  func
 
 # init change?
 # dopisac tworzenie  key
@@ -167,20 +26,26 @@ def createHashes(path):
 @click.option('--private_key', help='Your private key.')
 
 def init(wallet_address, private_key): 
+
+    file_path = "variable.json"
+
+    with open(file_path, "r") as file:
+        data1 = json.load(file)
+
     generate_all_keys(wallet_address)
     if not wallet_address or not private_key:
         print("Error: Please provide both wallet address and private key.")
         return
     
 
-    sepolia_rpc_url = "https://sepolia.base.org"
+    sepolia_rpc_url = data1["sepolia_rpc_url"]
     web3 = Web3(Web3.HTTPProvider(sepolia_rpc_url))
     print(f"Is connected: {web3.is_connected()}")  # Is connected: True
     with open('contract_abi.json', 'r') as file:
         contract_abi = json.load(file)
 
     chain_id = web3.eth.chain_id
-    contract_address = '0xC0135b6575842091206CA17E5F089235B37F41Ef'  #wpisac jako zmienna
+    contract_address = data1["contract_address"] #wpisac jako zmienna
     
     contract = web3.eth.contract(address=contract_address, abi=contract_abi) 
     print(contract)
@@ -189,7 +54,7 @@ def init(wallet_address, private_key):
         'private_key': private_key,
         'chain_id': chain_id,
         'contract_address': contract_address,
-        'sepolia_rpc_url' : "https://sepolia.base.org",
+        'sepolia_rpc_url' : sepolia_rpc_url
        
     }
     with open('config.json', 'w') as file:
@@ -197,17 +62,35 @@ def init(wallet_address, private_key):
 
 
 
-@cli.command(help= 'view user logs')
-def generate_rsa_keys():
-    pass
-    
+
+@cli.command(help = 'comand for logging')
+@click.option('--login', help='User login')
+@click.option('--password', help='User password')
+def login(login, password):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+
+    receipt = execute_transaction(
+        contract, 'login', [login, password], chain_id, wallet_address, private_key, web3
+    )
+
+    print(receipt)
+    if receipt.status == 1:
+        print("login success")
 
 
 
-@cli.command(help= 'generate rsa keys')
+@cli.command(help ='log out')
+def logout( ):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
-def generate_rsa_keys():
-    generate_keys_rsa()
+    receipt = execute_transaction(contract, 'logoutUser', [], chain_id, wallet_address, private_key, web3)
+    print(receipt)
+
+    if receipt.status == 1:
+        print("logout succes")
+
+
 
 @cli.command(help= 'adminOnly register new user')
 @click.option('--address', help='New user address')
@@ -232,51 +115,6 @@ def register_user(address, login, password):
     print(receipt)
     if receipt.status == 1:
         print('User registered success')
-
-
-
-@cli.command(help='add file data')
-@click.option('--filename', help='FILENAME')
-@click.option('--path', help='PATH')
-def add_file_data(filename, path):
-    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    
-    # Check if filename and path are provided
-    if not filename or not path:
-        print("Error: Please provide both filename and path.")
-        return
-    
-    # Create hashes
-    ipfsHash, fileHash = createHashes(path)
-    
-    # Check if createHashes function returns valid hashes
-    if not ipfsHash or not fileHash:
-        print("Error: Failed to create hashes.")
-        return
-
-    # Get current time
-    dateAdded = int(time.time())
-
-    # Extract file extension for fileType
-    fileType = path.split('.')[-1]
-    print(sha)
-
-    try:
-        # Execute transaction
-        receipt = execute_transaction(
-            contract, 'addFile', [ipfsHash, fileHash, filename, fileType, dateAdded], chain_id, wallet_address, private_key, web3
-        )
-        
-        # Check if transaction was successful
-        if receipt.status == 1:
-            print('FILE ADDED SUCCESS')
-        else:
-            print('Error: File addition failed.')
-    except Exception as e:
-        print('Error:', e)
-
-
-
 
 
 
@@ -305,7 +143,6 @@ def getUserDetails( address):
    
     
 
-
 @cli.command(help = 'adminOnly add new admin')
 @click.option('--address', help='New admin address')
 
@@ -324,23 +161,9 @@ def set_Admin(address):
         print('OK')
      
 
-def set_Admin(address):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
 
-    
-
-    # Wywołanie uniwersalnej metody execute_transaction
-    receipt = execute_transaction(
-        contract, 'setAdmin', [address], chain_id, wallet_address, private_key, web3
-    )
-
-    print(receipt)
-    if receipt.status == 1:
-        print('OK')
-
-
-
-
+@cli.command(help= 'adminOnly setSuperUser')
+@click.option('--address', help='User address')
 
 def set_SuperUser(address):
     contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
@@ -392,6 +215,7 @@ def change_user_name(address, new_name):
         print('Name changed')
 
 
+
 @cli.command(help = 'change password')
 @click.option('--new_password', help='New password')
 
@@ -407,54 +231,6 @@ def change_my_password(new_password):
     if receipt.status == 1:
         print('Password changing success')
      
-
-
-
-@cli.command(help = 'comand for logging')
-@click.option('--login', help='User login')
-@click.option('--password', help='User password')
-def login(login, password):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
-
-    receipt = execute_transaction(
-        contract, 'login', [login, password], chain_id, wallet_address, private_key, web3
-    )
-
-    print(receipt)
-    if receipt.status == 1:
-        print("login success")
-
-@cli.command(help ='log out')
-def logout( ):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-
-    receipt = execute_transaction(contract, 'logoutUser', [], chain_id, wallet_address, private_key, web3)
-    print(receipt)
-
-    if receipt.status == 1:
-        print("logout succes")
-
-
-@cli.command(help='Admin OR SUPERUSER Only get another user logs')
-@click.option('--user_address', help='User address')
-@click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def get_user_logs(user_address, output_file):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
-    user_logs = contract.functions.getUserLogs(user_address).call({'from': wallet_address})
-    
-    if output_file:
-        with open(output_file, 'w') as f:
-            f.write("User Logs:\n")
-            for user_log in user_logs:
-                f.write(str(user_log) + '\n')
-        print(f"User logs saved to {output_file}")
-    else:
-        print("User Logs:")
-        for user_log in user_logs:
-            print(user_log)
-
 
 
 @cli.command(help= 'onlyAdmin get list of all users')
@@ -480,6 +256,111 @@ def view_my_role( ):
     print(user_status)
 
 
+
+@cli.command(help = 'see admin addres')
+def adminAddres():
+    
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    admin_address = contract.functions.adminAddress().call({'from': wallet_address})
+
+    print("AdminAddres:", admin_address)
+
+
+
+@cli.command(help = 'see superuser addres')
+def superuserAddres():
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+     
+    superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
+
+    print("superuserAddres:", admin_address)
+
+
+
+@cli.command(help= 'adminOnly check user role')
+@click.option('--address', help='User address')
+def check_User_Role(address):
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    address = Web3.to_checksum_address(address)
+    user_status = contract.functions.checkUserRole(address).call({'from': wallet_address})
+
+    print("User status:", user_status)
+
+@cli.command(help= 'check if user logged')
+@click.option('--address', help='User address')
+def is_User_Logged_In( address):
+
+    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
+    is_logged_in = contract.functions.isUserLoggedIn(address).call({'from': wallet_address})
+    
+    print("Is user logged in:", is_logged_in)
+
+####################################################
+#################################################
+#add file data
+
+@cli.command(help='add file data')
+@click.option('--filename', help='FILENAME')
+@click.option('--path', help='PATH')
+def add_file_data(filename, path):
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+    
+    # Check if filename and path are provided
+    if not filename or not path:
+        print("Error: Please provide both filename and path.")
+        return
+    
+    # Create hashes
+    ipfsHash, fileHash = createHashes(path)
+    
+    # Check if createHashes function returns valid hashes
+    if not ipfsHash or not fileHash:
+        print("Error: Failed to create hashes.")
+        return
+
+    # Get current time
+    dateAdded = int(time.time())
+
+    # Extract file extension for fileType
+    fileType = path.split('.')[-1]
+    print(sha)
+
+    try:
+        # Execute transaction
+        receipt = execute_transaction(
+            contract, 'addFile', [ipfsHash, fileHash, filename, fileType, dateAdded], chain_id, wallet_address, private_key, web3
+        )
+        
+        # Check if transaction was successful
+        if receipt.status == 1:
+            print('FILE ADDED SUCCESS')
+        else:
+            print('Error: File addition failed.')
+    except Exception as e:
+        print('Error:', e)
+
+
+
+@cli.command(help='get file data by file hash')
+@click.option('--file_hash', help='File hash')
+def get_filed_data(file_hash):
+    if not file_hash:
+        print("Error: Please provide the file hash.")
+        return
+
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+     
+    file_data = contract.functions.getFile(file_hash).call({'from': wallet_address})
+
+    
+    print("File Hash:", file_data[0])
+    print("IPFS Hash:", file_data[1])
+    print("File Name:", file_data[2])
+    print("File Type:", file_data[3])
+    print("Date Added:", file_data[4])
+    print("Exist:", file_data[5])
+
 #############################################################################
 #viewMyLogs
 
@@ -503,6 +384,7 @@ def view_my_company_logs(output_file):
 def view_my_encrypted_logs(output_file):
     decrypted_logs = view_my_logs_sk(output_file, True, False)
     
+    decrypted_logs = []
     for encrypted_log in decrypted_logs:
         print(encrypted_log[0])
        
@@ -510,7 +392,9 @@ def view_my_encrypted_logs(output_file):
         decrypted_data = aesDecrypt(encrypted_hex, getAESKey(my_wallet_address()), nonce, tag)
         print(decrypted_data)
 
-    ##tutaj jeszcze zapisa do  pliku
+    
+
+    ##tutaj jeszcze zapis  do  pliku
 
 #zapis do pliku oraz w jaki sposob klucz publiczny i prywatny dodoac
 @cli.command(help= 'view my company logs')
@@ -520,6 +404,7 @@ def view_my_encrypted_company_logs(output_file):
     
     private_key = get_private_key(my_wallet_address())
 
+    decrypted_logs = []
     for encrypted_log in encrypted_logs:
         log = encrypted_log[0]
         log_data_bytes = bytes.fromhex(log)
@@ -556,6 +441,7 @@ def view_user_company_logs(user_address,output_file):
 def view_user_encrypted_logs(user_address,output_file):
         decrypted_logs=view_user_logs_sk(user_address,output_file,True,False)
         
+        decrypted_logs = []
         for encrypted_log in decrypted_logs:
             encrypted_hex, nonce, tag =encrypted_log[0].split('.')
             decrypted_data = aesDecrypt(encrypted_hex, getAESKey(user_address), nonce, tag)
@@ -570,6 +456,8 @@ def view_user_encrypted_logs(user_address,output_file):
 def view_user_encrypted_company_logs(user_address,output_file):
     encrypted_logs=view_user_logs_sk(user_address,output_file,True,True)
     private_key = get_private_key(user_address)
+
+    decrypted_logs = []
     for encrypted_log in encrypted_logs:
         log = encrypted_log[0]
         log_data_bytes = bytes.fromhex(log)
@@ -691,12 +579,6 @@ def add_public_log( log_data):
 
 ###new admin add code
 
-
-
-######################################################################################
-
-
-
 @cli.command(help= 'view public logs')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_public_logs(output_file):
@@ -716,91 +598,7 @@ def view_public_logs(output_file):
             print(my_log)
 
 
-
-
-@cli.command(help = 'see admin addres')
-def adminAddres():
-    
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-    admin_address = contract.functions.adminAddress().call({'from': wallet_address})
-
-    print("AdminAddres:", admin_address)
-
-
-
-@cli.command(help = 'see superuser addres')
-def superuserAddres():
-
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-     
-    superuser_address = contract.functions.superuserAddress().call({'from': wallet_address})
-
-    print("superuserAddres:", admin_address)
-
-
-@cli.command(help='get file data by file hash')
-@click.option('--file_hash', help='File hash')
-def getFileData(file_hash):
-    if not file_hash:
-        print("Error: Please provide the file hash.")
-        return
-
-    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-     
-    file_data = contract.functions.getFile(file_hash).call({'from': wallet_address})
-
-    
-    print("File Hash:", file_data[0])
-    print("IPFS Hash:", file_data[1])
-    print("File Name:", file_data[2])
-    print("File Type:", file_data[3])
-    print("Date Added:", file_data[4])
-    print("Exist:", file_data[5])
-
-
-
-
-
-@cli.command(help= 'adminOnly check user role')
-@click.option('--address', help='User address')
-def check_User_Role(address):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-    address = Web3.to_checksum_address(address)
-    user_status = contract.functions.checkUserRole(address).call({'from': wallet_address})
-
-    print("User status:", user_status)
-
-@cli.command(help= 'check if user logged')
-@click.option('--address', help='User address')
-def is_User_Logged_In( address):
-
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-    is_logged_in = contract.functions.isUserLoggedIn(address).call({'from': wallet_address})
-    
-    print("Is user logged in:", is_logged_in)
-
-
-   
-
-
-@cli.command(help = 'adminOnly add new admin')
-@click.option('--address', help='New admin address')
-
-def set_Admin(address):
-    contract, wallet_address, private_key,chain_id,web3 = get_contract_and_credentials()
-
-    
-
-    # Wywołanie uniwersalnej metody execute_transaction
-    receipt = execute_transaction(
-        contract, 'setAdmin', [address], chain_id, wallet_address, private_key, web3
-    )
-
-    print(receipt)
-    if receipt.status == 1:
-        print('OK')
-
-
+######################################################################################
 
 if __name__ == '__main__':
     cli()

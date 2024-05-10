@@ -107,24 +107,6 @@ def rsaEncrypt(message, public_key):
     return ciphertext
     
 
-'''
-def generate_all_keys(username):
-    # Tworzenie folderu 'keys', jeśli nie istnieje
-    if not os.path.exists('keys'):
-        os.makedirs('keys')
-
-    # Generowanie kluczy RSA
-    private_key = generate_private_key()
-    public_key = generate_public_key(private_key)
-    
-    # Zapisywanie kluczy RSA do folderu keys
-    save_private_key(private_key, os.path.join('keys', f"{username}_private_key.pem"))
-    save_public_key(public_key, os.path.join('keys', f"{username}_public_key.pem"))
-
-    # Generowanie i zapisywanie klucza AES do folderu keys
-    aes_key = generateKey()
-    save_aes_key(aes_key, os.path.join('keys', f"{username}_aes_key.txt"))
-    '''
 
 def generate_all_keys(username):
     # Tworzenie folderu 'keys', jeśli nie istnieje
