@@ -111,6 +111,9 @@ def view_user_logs_sk(address,output_file, encrypted, company):
     
    
     my_logs = contract.functions.getUserLogs(address,encrypted, company).call({'from': wallet_address})
+
+    if encrypted :
+        return my_logs
     
     if output_file:
         # Zapisz logi do pliku, jeśli podano parametr --file
@@ -533,8 +536,7 @@ def view_my_encrypted_company_logs(output_file):
 @cli.command(help= 'view user logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_user_logs(output_file):
-    def view_user_company_logs(output_file):
+def view_user_logs(user_address,output_file):
         view_user_logs_sk(user_address,output_file,False,False)
     
 
@@ -543,7 +545,7 @@ def view_user_logs(output_file):
 @cli.command(help= 'view user company logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_user_company_logs(output_file):
+def view_user_company_logs(user_address,output_file):
     view_user_logs_sk(user_address,output_file,False,True)
 
 
@@ -551,7 +553,7 @@ def view_user_company_logs(output_file):
 @cli.command(help= 'view user  encrypted logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_user_encrypted_logs(output_file):
+def view_user_encrypted_logs(user_address,output_file):
         decrypted_logs=view_user_logs_sk(user_address,output_file,True,False)
         
         for encrypted_log in decrypted_logs:
@@ -565,17 +567,18 @@ def view_user_encrypted_logs(output_file):
 @cli.command(help= 'view user company  encrypted logs')
 @click.option('--user_address', help='User address')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
-def view_user_encrypted_company_logs(output_file):
+def view_user_encrypted_company_logs(user_address,output_file):
     encrypted_logs=view_user_logs_sk(user_address,output_file,True,True)
-    
-    
     private_key = get_private_key(user_address)
     for encrypted_log in encrypted_logs:
         log = encrypted_log[0]
         log_data_bytes = bytes.fromhex(log)
         decrypted_log = rsaDecrypt(log_data_bytes, private_key)
+        
         print(decrypted_log)
         
+
+ 
 
 #############################################################################
 
@@ -600,6 +603,11 @@ def add_log( log_data):
     print(receipt)
     if receipt.status == 1:
         print('Log entry added succesfully')
+
+
+@cli.command(help='my wallet address ')
+def my_address():
+    my_wallet_address()
 
 @cli.command(help='Add log encrypted entry ')
 @click.option('--log_data', help='Log data to add')
@@ -646,7 +654,7 @@ def add_company_log(user_address, log_data):
 @click.option('--log_data', help='Log data to add')
 def add_encrypted_company_log(user_address, log_data):
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
-    public_key = get_public_key(my_wallet_address())
+    public_key = get_public_key(user_address)
     
     
     log_data_bytes = log_data.encode()
