@@ -193,16 +193,15 @@ function isUserLoggedIn(address _userAddress) public view  onlyUser onlyAdmin  r
     return user.isUserLoggedIn;
 }
 
-
-
-  
-
     function setSuperuser(address _superuserAddress) public onlyUser onlyAdmin {
         superuserAddress = _superuserAddress;
     }
 
     function setAdmin(address _adminAddress) public onlyUser onlyAdmin {
         adminAddress = _adminAddress;
+    }
+    function getAllUsers() public view onlyUser onlyAdmin returns (address[] memory) {
+        return userList;
     }
 
     function registerUser(
@@ -306,7 +305,7 @@ function getMyLogs(bool _isEncrypted, bool _isCompanyLog) public onlyUser view r
     return resultLogs;
 }
 
-
+    
 //see my userrole
     function viewMyRole() public view onlyUser returns (string memory) {
         if (msg.sender == adminAddress) {

@@ -324,12 +324,13 @@ def add_file_data(filename, path):
 
     # Extract file extension for fileType
     fileType = path.split('.')[-1]
-    print(sha)
+    print(fileHash)
+    
 
     try:
         # Execute transaction
         receipt = execute_transaction(
-            contract, 'addFile', [ipfsHash, fileHash, filename, fileType, dateAdded], chain_id, wallet_address, private_key, web3
+            contract, 'add', [ipfsHash, fileHash, filename, fileType, dateAdded], chain_id, wallet_address, private_key, web3
         )
         
         # Check if transaction was successful
@@ -351,7 +352,7 @@ def get_filed_data(file_hash):
 
     contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
      
-    file_data = contract.functions.getFile(file_hash).call({'from': wallet_address})
+    file_data = contract.functions.get(file_hash).call({'from': wallet_address})
 
     
     print("File Hash:", file_data[0])
@@ -367,8 +368,7 @@ def get_filed_data(file_hash):
 @cli.command(help= 'view my logs')
 @click.option('-f', '--file', 'output_file', type=click.Path(), help='File to save logs see in terminal without this function')
 def view_my_logs(output_file):
-    def view_my_company_logs(output_file):
-        view_my_logs_sk(output_file,False,False)
+    view_my_logs_sk(output_file,False,False)
 
     
 
@@ -384,7 +384,7 @@ def view_my_company_logs(output_file):
 def view_my_encrypted_logs(output_file):
     decrypted_logs = view_my_logs_sk(output_file, True, False)
     
-    decrypted_logs = []
+    
     for encrypted_log in decrypted_logs:
         print(encrypted_log[0])
        
@@ -485,7 +485,7 @@ def add_log( log_data):
 
     # Wywołanie uniwersalnej metody execute_transaction
     receipt = execute_transaction(
-        contract, 'addMyLog', [log_data], chain_id, wallet_address, private_key, web3
+        contract, 'addUserLog', [log_data], chain_id, wallet_address, private_key, web3
     )
 
     print(receipt)
@@ -495,7 +495,7 @@ def add_log( log_data):
 
 @cli.command(help='my wallet address ')
 def my_address():
-    my_wallet_address()
+    print(my_wallet_address())
 
 @cli.command(help='Add log encrypted entry ')
 @click.option('--log_data', help='Log data to add')
@@ -511,7 +511,7 @@ def add_encrypted_log(log_data):
     result = ".".join([encrypted_hex, nonce, tag])  
     
     receipt = execute_transaction(
-        contract, 'addEncryptedLog', [result], chain_id, wallet_address, private_key, web3
+        contract, 'addEncryptedUserLog', [result], chain_id, wallet_address, private_key, web3
     )
 
     print(receipt)

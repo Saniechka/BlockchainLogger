@@ -128,7 +128,7 @@ def createHashes(path):
     with open(file_path, "r") as file:
         data1 = json.load(file)
 
-    url = data1[ipfs_url]
+    url = data1["ipfs_url"]
     authorization_token= data1["ipfs_jwt"]
 
     
