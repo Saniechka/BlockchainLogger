@@ -387,7 +387,6 @@ def view_my_encrypted_logs(output_file):
     
     for encrypted_log in decrypted_logs:
         print(encrypted_log[0])
-       
         encrypted_hex, nonce, tag =encrypted_log[0].split('.')
         decrypted_data = aesDecrypt(encrypted_hex, getAESKey(my_wallet_address()), nonce, tag)
         print(decrypted_data)

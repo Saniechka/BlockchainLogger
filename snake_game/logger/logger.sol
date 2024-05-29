@@ -306,6 +306,7 @@ function getMyLogs(bool _isEncrypted, bool _isCompanyLog) public onlyUser view r
 }
 
     
+    
 //see my userrole
     function viewMyRole() public view onlyUser returns (string memory) {
         if (msg.sender == adminAddress) {
