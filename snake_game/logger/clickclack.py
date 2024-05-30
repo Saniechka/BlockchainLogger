@@ -16,6 +16,26 @@ from help import  load_config,my_wallet_address,get_contract_and_credentials,exe
 def cli(ctx):
     pass
 
+
+
+
+def get_filed_data_frontend(file_hash):
+    if not file_hash:
+        print("Error: Please provide the file hash.")
+        return
+
+    contract, wallet_address, private_key, chain_id, web3 = get_contract_and_credentials()
+     
+    file_data = contract.functions.get(file_hash).call({'from': wallet_address})
+
+    
+    print("File Hash:", file_data[0])
+    print("IPFS Hash:", file_data[1])
+    print("File Name:", file_data[2])
+    print("File Type:", file_data[3])
+    print("Date Added:", file_data[4])
+    print("Exist:", file_data[5])
+
 ###############################
 # login auth  func
 
